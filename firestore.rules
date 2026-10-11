@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(resourceData) {
+      return signedIn() && resourceData.ownerUid == request.auth.uid;
+    }
+
+    match /users/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow read, update, delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /businesses/{businessId} {
+      allow read: if resource.data.status == "active"
+                  || (signedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if signedIn() && businessId == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status == "draft"
+        && request.resource.data.subscriptionStatus == "unpaid"
+        && request.resource.data.keys().hasOnly([
+          "ownerUid","name","slug","phone","website","zip","city","category",
+          "status","subscriptionStatus","createdAt","updatedAt"
+        ]);
+      allow update: if owns(resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "name","phone","website","zip","city","category","updatedAt"
+        ]);
+      allow delete: if false;
+    }
+
+    match /deals/{dealId} {
+      allow read: if (resource.data.active == true && resource.data.publishingApproved == true)
+                  || (signedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.businessId == request.auth.uid
+        && request.resource.data.publishingApproved == false
+        && request.resource.data.keys().hasOnly([
+          "ownerUid","businessId","business","businessSlug","title","category",
+          "zip","city","price","description","terms","imageUrl","active",
+          "publishingApproved","createdAt","updatedAt"
+        ]);
+      allow update: if owns(resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "title","category","zip","city","price","description","terms","imageUrl",
+          "active","updatedAt"
+        ]);
+      allow delete: if owns(resource.data);
+    }
+  }
+}
