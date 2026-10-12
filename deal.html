@@ -8,9 +8,9 @@ try{
   d=await getDealById(id);
   if(d)b=d.businessId?await getBusinessById(d.businessId):await getBusinessByName(d.business);
 }catch(e){console.warn(e)}
-if(!d)d=getDeal(id);
+if(d&&(d.active!==true||d.publishingApproved!==true))d=null;
 if(d&&!b)b=businessInfo(d.business);
-if(!d||d.active===false){
+if(!d){
   content.innerHTML='<div class="panel"><h2>This deal is not currently active.</h2><a class="btn btn-primary" href="'+MDP_BASE+'">Browse active deals</a></div>';
 }else{
   const businessUrl=d.businessId?MDP_BASE+'business.html?id='+encodeURIComponent(d.businessId):MDP_BASE+'business.html?name='+encodeURIComponent(d.business);
