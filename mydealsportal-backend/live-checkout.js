@@ -17,8 +17,12 @@ export const liveCheckout = onRequest({region:"us-central1",secrets:[liveKey]},a
     const api=stripe();
     stage="previous_checkout";
     if(biz.pendingCheckoutId){
-      const prior=await api.checkout.sessions.retrieve(biz.pendingCheckoutId);
-      if(prior.status==="open" && prior.url){res.json({url:prior.url});return;}
+      try {
+        const prior=await api.checkout.sessions.retrieve(biz.pendingCheckoutId);
+        if(prior.status==="open" && prior.url){res.json({url:prior.url});return;}
+      } catch (error) {
+        console.warn("Previous checkout unavailable",error.message);
+      }
     }
     stage="offer_selection";
     const offer=await chooseOffer(user.uid);
