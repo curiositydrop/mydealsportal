@@ -14,8 +14,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: mydealsportal-backend/package-lock.json
       - name: Verify Firebase credentials are configured
         env:
           FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MYDEALSPORTAL }}
@@ -27,7 +25,7 @@ jobs:
       - name: Install and check backend
         working-directory: mydealsportal-backend
         run: |
-          npm ci
+          npm install --no-audit --no-fund
           npm run check
       - name: Deploy only liveCheckout
         env:
