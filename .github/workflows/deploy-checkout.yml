@@ -1,0 +1,39 @@
+name: Deploy MyDealsPortal checkout
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mydealsportal-backend/package-lock.json
+      - name: Verify Firebase credentials are configured
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MYDEALSPORTAL }}
+        run: |
+          if [ -z "$FIREBASE_CREDENTIALS" ]; then
+            echo "::error::Missing FIREBASE_SERVICE_ACCOUNT_MYDEALSPORTAL repository secret. No deployment attempted."
+            exit 1
+          fi
+      - name: Install and check backend
+        working-directory: mydealsportal-backend
+        run: |
+          npm ci
+          npm run check
+      - name: Deploy only liveCheckout
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MYDEALSPORTAL }}
+        run: |
+          printf '%s' "$FIREBASE_CREDENTIALS" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
+          npx --yes firebase-tools deploy --project mydealsportal --only functions:mydealsportal:liveCheckout --non-interactive
