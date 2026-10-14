@@ -15,6 +15,7 @@ export async function createClaim(dealId) {
   const dealSnap = await db().collection("deals").doc(dealId).get();
   const deal = dealSnap.data();
   if (!deal || deal.sample === true || deal.active !== true || deal.publishingApproved !== true) return bad(404,"Deal unavailable");
+  if (!validId(deal.businessId)) return bad(404,"Deal unavailable");
   const bizSnap = await db().collection("businesses").doc(deal.businessId).get();
   const biz = bizSnap.data();
   if (!biz || biz.status !== "active" || !["active","trialing"].includes(biz.subscriptionStatus))
@@ -41,6 +42,7 @@ export async function redeemClaim(claimCode,pin) {
     if (!claimSnap.exists) return bad(404,"Claim not found");
     const claim=claimSnap.data();
     if (claim.status==="redeemed") return bad(409,"Already redeemed");
+    if (!validId(claim.businessId) || !validId(claim.dealId)) return bad(409,"Claim unavailable");
     const bizRef=db().collection("businesses").doc(claim.businessId);
     const privateRef=db().collection("redemptionPrivate").doc(claim.businessId);
     const dealRef=db().collection("deals").doc(claim.dealId);
@@ -48,10 +50,11 @@ export async function redeemClaim(claimCode,pin) {
     const business=bizSnap.data(),deal=dealSnap.data();
     if (!business || business.status!=="active" || !["active","trialing"].includes(business.subscriptionStatus))
       return bad(403,"Business inactive");
-    if (!canRedeem(claim,{...deal,id:claim.dealId},Date.now()))
+    if (!deal || deal.sample===true || !canRedeem(claim,{...deal,id:claim.dealId},Date.now()))
       return bad(409,"Claim unavailable");
+    if (!privateSnap.exists) return bad(409,"Store redemption is not enabled");
     if ((claim.lockedUntil||0)>Date.now() || (privateSnap.data()?.lockedUntil||0)>Date.now()) return bad(429,"Too many PIN attempts. Try later.");
-    if (!privateSnap.exists || !verifyPin(pin,privateSnap.data().pinHash)) {
+    if (!verifyPin(pin,privateSnap.data().pinHash)) {
       const attempts=((claim.lockedUntil||0) && (claim.lockedUntil||0)<=Date.now()) ? 1 : (claim.failedPinAttempts||0)+1;
       tx.update(claimRef,{failedPinAttempts:attempts,lockedUntil:attempts>=5?Date.now()+15*60*1000:0});
       if(privateSnap.exists){
