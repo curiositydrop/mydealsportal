@@ -40,16 +40,17 @@ export async function redeemClaim(claimCode,pin) {
     const claim=claimSnap.data();
     if (claim.status==="redeemed") return bad(409,"Already redeemed");
     const bizRef=db().collection("businesses").doc(claim.businessId);
+    const privateRef=db().collection("redemptionPrivate").doc(claim.businessId);
     const dealRef=db().collection("deals").doc(claim.dealId);
-    const [bizSnap,dealSnap]=await Promise.all([tx.get(bizRef),tx.get(dealRef)]);
+    const [bizSnap,dealSnap,privateSnap]=await Promise.all([tx.get(bizRef),tx.get(dealRef),tx.get(privateRef)]);
     const business=bizSnap.data(),deal=dealSnap.data();
     if (!business || business.status!=="active" || !["active","trialing"].includes(business.subscriptionStatus))
       return bad(403,"Business inactive");
     if (!canRedeem(claim,{...deal,id:claim.dealId},Date.now()))
       return bad(409,"Claim unavailable");
     if ((claim.lockedUntil||0)>Date.now()) return bad(429,"Too many PIN attempts. Try later.");
-    if (!business.redemptionPinHash || !verifyPin(pin,business.redemptionPinHash)) {
-      const attempts=(claim.failedPinAttempts||0)+1;
+    if (!privateSnap.exists || !verifyPin(pin,privateSnap.data().pinHash)) {
+      const attempts=((claim.lockedUntil||0) && (claim.lockedUntil||0)<=Date.now()) ? 1 : (claim.failedPinAttempts||0)+1;
       tx.update(claimRef,{failedPinAttempts:attempts,lockedUntil:attempts>=5?Date.now()+15*60*1000:0});
       return bad(403,"Invalid store PIN");
     }
