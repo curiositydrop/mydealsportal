@@ -28,4 +28,4 @@ jobs:
         with:
           node-version: '22'
       - run: node --check redemption-app-check.js && node --check redemption-claim-quota.js && node --check redemption-limits.js && node --check redemption-core.js && node --check redemption-service.js && node --check store-config.js && node --check redemption-http-draft.js && node --check ../redemption-config.js && node --check ../redemption-app-check-client.js && node --check ../redemption-owner-pin-ui.js && node --check ../redemption-ui.js && node --check ../redemption-api-client.js
-      - run: node --test redemption-core.test.js redemption-client.test.js redemption-api-client.test.js redemption-limits.test.js redemption-claim-quota.test.js
+      - run: node --test redemption-core.test.js redemption-client.test.js redemption-api-client.test.js redemption-limits.test.js redemption-claim-quota.test.js redemption-config.test.js
