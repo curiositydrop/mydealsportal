@@ -48,12 +48,18 @@ export async function redeemClaim(claimCode,pin) {
       return bad(403,"Business inactive");
     if (!canRedeem(claim,{...deal,id:claim.dealId},Date.now()))
       return bad(409,"Claim unavailable");
-    if ((claim.lockedUntil||0)>Date.now()) return bad(429,"Too many PIN attempts. Try later.");
+    if ((claim.lockedUntil||0)>Date.now() || (privateSnap.data()?.lockedUntil||0)>Date.now()) return bad(429,"Too many PIN attempts. Try later.");
     if (!privateSnap.exists || !verifyPin(pin,privateSnap.data().pinHash)) {
       const attempts=((claim.lockedUntil||0) && (claim.lockedUntil||0)<=Date.now()) ? 1 : (claim.failedPinAttempts||0)+1;
       tx.update(claimRef,{failedPinAttempts:attempts,lockedUntil:attempts>=5?Date.now()+15*60*1000:0});
+      if(privateSnap.exists){
+        const old=privateSnap.data();
+        const total=(old.lockedUntil||0)>0 && (old.lockedUntil||0)<=Date.now()?1:(old.failedPinAttempts||0)+1;
+        tx.update(privateRef,{failedPinAttempts:total,lockedUntil:total>=5?Date.now()+15*60*1000:0});
+      }
       return bad(403,"Invalid store PIN");
     }
+    tx.update(privateRef,{failedPinAttempts:0,lockedUntil:0});
     tx.update(claimRef,{
       status:"redeemed",redeemedAt:FieldValue.serverTimestamp(),
       failedPinAttempts:0,lockedUntil:0
