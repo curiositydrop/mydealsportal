@@ -4,7 +4,6 @@
 import { createHash } from "node:crypto";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { newClaimCode, canRedeem, verifyPin } from "./redemption-core.js";
-import {attemptState,blocked} from "./redemption-limits.js";
 import {nextClaimQuota} from "./redemption-claim-quota.js";
 
 const db = () => getFirestore();
@@ -62,18 +61,12 @@ export async function redeemClaim(claimCode,pin) {
     if (!deal || deal.sample===true || !canRedeem(claim,{...deal,id:claim.dealId},Date.now()))
       return bad(409,"Claim unavailable");
     if (!privateSnap.exists) return bad(409,"Store redemption is not enabled");
-    if ((claim.lockedUntil||0)>Date.now() || blocked({attempts:privateSnap.data()?.failedPinAttempts,windowStart:privateSnap.data()?.windowStart,lockedUntil:privateSnap.data()?.lockedUntil})) return bad(429,"Too many PIN attempts. Try later.");
+    if ((claim.lockedUntil||0)>Date.now() || (claim.failedPinAttempts||0)>=5) return bad(429,"Too many PIN attempts for this claim.");
     if (!verifyPin(pin,privateSnap.data().pinHash)) {
       const attempts=((claim.lockedUntil||0) && (claim.lockedUntil||0)<=Date.now()) ? 1 : (claim.failedPinAttempts||0)+1;
       tx.update(claimRef,{failedPinAttempts:attempts,lockedUntil:attempts>=5?Date.now()+15*60*1000:0});
-      if(privateSnap.exists){
-        const old=privateSnap.data();
-        const next=attemptState({attempts:old.failedPinAttempts,windowStart:old.windowStart,lockedUntil:old.lockedUntil});
-        tx.update(privateRef,{failedPinAttempts:next.attempts,windowStart:next.windowStart,lockedUntil:next.lockedUntil});
-      }
       return bad(403,"Invalid store PIN");
     }
-    tx.update(privateRef,{failedPinAttempts:0,windowStart:0,lockedUntil:0});
     tx.update(claimRef,{
       status:"redeemed",redeemedAt:FieldValue.serverTimestamp(),
       failedPinAttempts:0,lockedUntil:0
