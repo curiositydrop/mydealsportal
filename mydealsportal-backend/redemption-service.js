@@ -89,5 +89,5 @@ export async function getClaimStatus(claimCode) {
   if (!snap.exists) return bad(404,"Claim not found");
   const claim=snap.data();
   return {status:200,dealId:claim.dealId,redeemed:claim.status==="redeemed",
-    expired:typeof claim.expiresAt==="number" && claim.expiresAt<=Date.now()};
+    expired:typeof claim.expiresAt!=="number" || !Number.isFinite(claim.expiresAt) || claim.expiresAt<=Date.now()};
 }
