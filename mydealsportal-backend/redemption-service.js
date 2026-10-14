@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { newClaimCode, canRedeem, verifyPin } from "./redemption-core.js";
 import {attemptState,blocked} from "./redemption-limits.js";
+import {nextClaimQuota} from "./redemption-claim-quota.js";
 
 const db = () => getFirestore();
 const digest = value => createHash("sha256").update(value).digest("hex");
