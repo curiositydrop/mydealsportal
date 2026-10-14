@@ -32,3 +32,11 @@ This branch is **not production-ready**. Do not merge or deploy until the checkl
 
 ## Production isolation
 No redemption endpoints are exported from `mydealsportal-backend/index.js`. The live checkout, webhook, pricing and billing portal are unchanged.
+
+## Additional draft pieces
+- `mydealsportal-backend/redemption-http-draft.js`: four opt-in HTTPS functions, intentionally NOT exported by production `index.js`.
+- `mydealsportal-backend/store-config.js`: authenticated-owner PIN configuration in private Firestore document.
+- `redemption-api-client.js`: guest client adapter that requires an explicitly configured HTTPS endpoint.
+- `redemption-demo.html`: standalone UI mock, not connected to Firebase.
+
+**Critical release blockers:** Anonymous claim endpoints require real abuse prevention (App Check, per-IP/business quotas and claim limits); server endpoints need integration tests with Firestore emulator; Firestore rules must deny client reads of private PINs and claims; claim issuance must be checked against current subscription and deal expiration. No production deploy or merge is authorized by this draft.
