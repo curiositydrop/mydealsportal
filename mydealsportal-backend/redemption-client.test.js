@@ -34,3 +34,10 @@ test("corrupted browser storage does not crash claim history",()=>{
  memory.set("mdp_claims_v1","{bad json");
  assert.deepEqual(allSavedClaims(),[]);
 });
+
+test("an active claim cannot be replaced with another code",()=>{
+ memory.clear();
+ saveClaim("dealD","MDP-0123456789ABCDEF0123");
+ assert.throws(()=>saveClaim("dealD","MDP-AAAAAAAAAAAAAAAAAAAA"));
+ assert.equal(savedClaim("dealD").code,"MDP-0123456789ABCDEF0123");
+});
