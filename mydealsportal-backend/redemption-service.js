@@ -23,7 +23,7 @@ export async function createClaim(dealId) {
   const claimRef = db().collection("redemptionClaims").doc(digest(claimCode));
   await claimRef.create({
     dealId, businessId:deal.businessId, status:"claimed",
-    createdAt:FieldValue.serverTimestamp(), redeemedAt:null, failedPinAttempts:0, lockedUntil:0
+    createdAt:FieldValue.serverTimestamp(), redeemedAt:null, failedPinAttempts:0, lockedUntil:0, expiresAt:Date.now()+30*24*60*60*1000
   });
   return {status:201,claimCode};
 }
@@ -60,4 +60,14 @@ export async function redeemClaim(claimCode,pin) {
     });
     return {status:200,redeemed:true};
   });
+}
+
+export async function getClaimStatus(claimCode) {
+  if (typeof claimCode !== "string" || !/^MDP-[0-9A-F]{20}$/.test(claimCode))
+    return bad(400,"Invalid claim");
+  const snap=await db().collection("redemptionClaims").doc(digest(claimCode)).get();
+  if (!snap.exists) return bad(404,"Claim not found");
+  const claim=snap.data();
+  return {status:200,dealId:claim.dealId,redeemed:claim.status==="redeemed",
+    expired:typeof claim.expiresAt==="number" && claim.expiresAt<=Date.now()};
 }
