@@ -21,8 +21,8 @@ export function savedClaim(dealId) {
 export function saveClaim(dealId,code) {
   if (!validDeal(dealId)||!validCode(code)) throw Error("Invalid claim data");
   const claims=load();
-  // Never replace an already redeemed claim with another code on this browser.
-  if (claims[dealId]?.status==="redeemed") throw Error("Already redeemed on this device");
+  // Never overwrite an issued claim; this also prevents losing its bearer code.
+  if (savedClaim(dealId)) throw Error("A claim is already saved for this deal");
   claims[dealId]={code,status:"claimed",savedAt:new Date().toISOString()};
   if (!persist(claims)) throw Error("Browser storage unavailable. Save your code before leaving.");
   return claims[dealId];
