@@ -8,6 +8,10 @@ export function redemptionApi(endpoint) {
     throw Error("A secure redemption endpoint must be configured");
   return async function send(payload, token) {
     const headers={"Content-Type":"application/json"};
+    if(typeof globalThis.mdpGetAppCheckToken==="function"){
+      const appToken=await globalThis.mdpGetAppCheckToken();
+      if(appToken)headers["X-Firebase-AppCheck"]=appToken;
+    }
     if(token)headers.Authorization="Bearer "+token;
     const response=await fetch(endpoint,{method:"POST",headers,body:JSON.stringify(payload),cache:"no-store"});
     const body=await response.json().catch(()=>({error:"Invalid server response"}));
