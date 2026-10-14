@@ -5,6 +5,8 @@ on:
       - 'mydealsportal-backend/redemption-*.js'
       - 'mydealsportal-backend/store-config.js'
       - 'redemption-client.js'
+      - 'redemption-api-client.js'
+      - 'redemption-ui.js'
       - '.github/workflows/redemption-checks.yml'
   workflow_dispatch:
 permissions:
@@ -20,5 +22,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --check redemption-core.js && node --check redemption-service.js && node --check store-config.js && node --check redemption-http-draft.js
+      - run: node --check redemption-core.js && node --check redemption-service.js && node --check store-config.js && node --check redemption-http-draft.js && node --check ../redemption-ui.js && node --check ../redemption-api-client.js
       - run: node --test redemption-core.test.js redemption-client.test.js
