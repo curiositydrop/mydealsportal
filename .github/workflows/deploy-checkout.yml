@@ -34,4 +34,4 @@ jobs:
         run: |
           printf '%s' "$FIREBASE_CREDENTIALS" > "$GOOGLE_APPLICATION_CREDENTIALS"
           chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
-          npx --yes firebase-tools deploy --project mydealsportal --only functions:mydealsportal:liveCheckout --non-interactive
+          npx --yes firebase-tools deploy --project mydealsportal --only functions:mydealsportal:liveCheckout --non-interactive --force
