@@ -23,7 +23,7 @@ export async function createClaim(dealId) {
   const claimRef = db().collection("redemptionClaims").doc(digest(claimCode));
   await claimRef.create({
     dealId, businessId:deal.businessId, status:"claimed",
-    createdAt:FieldValue.serverTimestamp(), redeemedAt:null
+    createdAt:FieldValue.serverTimestamp(), redeemedAt:null, failedPinAttempts:0, lockedUntil:0
   });
   return {status:201,claimCode};
 }
@@ -34,24 +34,29 @@ export async function redeemClaim(claimCode,pin) {
   if (typeof claimCode !== "string" || !/^MDP-[0-9A-F]{20}$/.test(claimCode))
     return bad(400,"Invalid claim");
   const claimRef=db().collection("redemptionClaims").doc(digest(claimCode));
-  const snap=await claimRef.get();
-  if (!snap.exists) return bad(404,"Claim not found");
-  const claim=snap.data();
-  const [bizSnap,dealSnap]=await Promise.all([
-    db().collection("businesses").doc(claim.businessId).get(),
-    db().collection("deals").doc(claim.dealId).get()
-  ]);
-  const business=bizSnap.data(),deal=dealSnap.data();
-  if (!business || business.status!=="active" || !["active","trialing"].includes(business.subscriptionStatus))
-    return bad(403,"Business inactive");
-  if (!business.redemptionPinHash || !verifyPin(pin,business.redemptionPinHash))
-    return bad(403,"Invalid store PIN");
-  const result=await db().runTransaction(async tx=>{
-    const fresh=await tx.get(claimRef);
-    const record=fresh.data();
-    if (!canRedeem(record,{...deal,id:claim.dealId},Date.now())) return false;
-    tx.update(claimRef,{status:"redeemed",redeemedAt:FieldValue.serverTimestamp()});
-    return true;
+  return db().runTransaction(async tx=>{
+    const claimSnap=await tx.get(claimRef);
+    if (!claimSnap.exists) return bad(404,"Claim not found");
+    const claim=claimSnap.data();
+    if (claim.status==="redeemed") return bad(409,"Already redeemed");
+    const bizRef=db().collection("businesses").doc(claim.businessId);
+    const dealRef=db().collection("deals").doc(claim.dealId);
+    const [bizSnap,dealSnap]=await Promise.all([tx.get(bizRef),tx.get(dealRef)]);
+    const business=bizSnap.data(),deal=dealSnap.data();
+    if (!business || business.status!=="active" || !["active","trialing"].includes(business.subscriptionStatus))
+      return bad(403,"Business inactive");
+    if (!canRedeem(claim,{...deal,id:claim.dealId},Date.now()))
+      return bad(409,"Claim unavailable");
+    if ((claim.lockedUntil||0)>Date.now()) return bad(429,"Too many PIN attempts. Try later.");
+    if (!business.redemptionPinHash || !verifyPin(pin,business.redemptionPinHash)) {
+      const attempts=(claim.failedPinAttempts||0)+1;
+      tx.update(claimRef,{failedPinAttempts:attempts,lockedUntil:attempts>=5?Date.now()+15*60*1000:0});
+      return bad(403,"Invalid store PIN");
+    }
+    tx.update(claimRef,{
+      status:"redeemed",redeemedAt:FieldValue.serverTimestamp(),
+      failedPinAttempts:0,lockedUntil:0
+    });
+    return {status:200,redeemed:true};
   });
-  return result?{status:200,redeemed:true}:bad(409,"Claim already used or unavailable");
 }
