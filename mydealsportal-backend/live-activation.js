@@ -36,7 +36,7 @@ export async function activateAfterPayment(stripe,session){
   const subscription=await stripe.subscriptions.create({
     customer:session.customer,items:[{price:billingPlan(plan).recurringPrice}],
     default_payment_method:payment.payment_method,
-    trial_end:nextChargeAt(session.created,plan),
+    trial_end:nextChargeAt(payment.created,plan),
     trial_settings:{end_behavior:{missing_payment_method:"cancel"}},
     metadata:{uid,plan,project:"mydealsportal"}
   },{idempotencyKey:"mdp-sub-"+session.id});
