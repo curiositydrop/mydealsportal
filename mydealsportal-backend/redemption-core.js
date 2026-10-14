@@ -7,7 +7,7 @@ export function newClaimCode() {
   return "MDP-" + randomBytes(10).toString("hex").toUpperCase();
 }
 export function validatePin(pin) {
-  return typeof pin === "string" && /^\\d{4}$/.test(pin);
+  return typeof pin === "string" && /^[0-9]{4}$/.test(pin);
 }
 export function hashPin(pin, salt = randomBytes(16).toString("hex")) {
   if (!validatePin(pin)) throw new Error("Store PIN must be four digits");
