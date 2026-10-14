@@ -1,0 +1,36 @@
+name: Deploy MyDealsPortal Firebase Functions
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mydealsportal-backend/**"
+      - "firebase.json"
+      - ".firebaserc"
+      - ".github/workflows/deploy-firebase-functions.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: mydealsportal-functions-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install backend dependencies and validate
+        working-directory: mydealsportal-backend
+        run: |
+          npm install --no-audit --no-fund
+          npm run check
+      - name: Authenticate Google Cloud using Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - name: Deploy production functions
+        run: npx --yes firebase-tools deploy --only functions --project mydealsportal --non-interactive
