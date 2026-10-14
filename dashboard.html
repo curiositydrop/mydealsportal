@@ -147,4 +147,10 @@ saveBtn.addEventListener("click",async()=>{
 clearBtn.addEventListener("click",clearForm);
 logoutBtn.addEventListener("click",async()=>{await logoutBusiness();location.href="login.html"});
 await refresh();
+if(redemptionReady(redemptionConfig) && subscribed){
+ const module=await import("./redemption-owner-pin-ui.js");
+ const panel=document.getElementById("redemptionPinPanel");
+ panel.style.display="block";
+ module.mountStorePinSetup(panel,user,redemptionConfig.endpoints.configurePin);
+}
 </script></body></html>
