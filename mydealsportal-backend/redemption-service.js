@@ -1,0 +1,57 @@
+// Standalone draft endpoints. NOT exported from index.js and NOT deployed.
+// Claim IDs are bearer secrets. Only their hashes are stored in Firestore.
+// Requires abuse controls before public release (App Check/rate limits).
+import { createHash, randomBytes } from "node:crypto";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { newClaimCode, canRedeem, verifyPin } from "./redemption-core.js";
+
+const db = () => getFirestore();
+const digest = value => createHash("sha256").update(value).digest("hex");
+const bad = (status, error) => ({ status, error });
+const validId = value => typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value);
+
+export async function createClaim(dealId) {
+  if (!validId(dealId)) return bad(400,"Invalid deal");
+  const dealSnap = await db().collection("deals").doc(dealId).get();
+  const deal = dealSnap.data();
+  if (!deal || deal.active !== true || deal.publishingApproved !== true) return bad(404,"Deal unavailable");
+  const bizSnap = await db().collection("businesses").doc(deal.businessId).get();
+  const biz = bizSnap.data();
+  if (!biz || biz.status !== "active" || !["active","trialing"].includes(biz.subscriptionStatus))
+    return bad(404,"Deal unavailable");
+  const claimCode = newClaimCode();
+  const claimRef = db().collection("redemptionClaims").doc(digest(claimCode));
+  await claimRef.create({
+    dealId, businessId:deal.businessId, status:"claimed",
+    createdAt:FieldValue.serverTimestamp(), redeemedAt:null
+  });
+  return {status:201,claimCode};
+}
+
+// Requires a private store PIN hash provisioned by an authenticated owner.
+// A single transaction prevents simultaneous double-redemption.
+export async function redeemClaim(claimCode,pin) {
+  if (typeof claimCode !== "string" || !/^MDP-[0-9A-F]{20}$/.test(claimCode))
+    return bad(400,"Invalid claim");
+  const claimRef=db().collection("redemptionClaims").doc(digest(claimCode));
+  const snap=await claimRef.get();
+  if (!snap.exists) return bad(404,"Claim not found");
+  const claim=snap.data();
+  const [bizSnap,dealSnap]=await Promise.all([
+    db().collection("businesses").doc(claim.businessId).get(),
+    db().collection("deals").doc(claim.dealId).get()
+  ]);
+  const business=bizSnap.data(),deal=dealSnap.data();
+  if (!business || business.status!=="active" || !["active","trialing"].includes(business.subscriptionStatus))
+    return bad(403,"Business inactive");
+  if (!business.redemptionPinHash || !verifyPin(pin,business.redemptionPinHash))
+    return bad(403,"Invalid store PIN");
+  const result=await db().runTransaction(async tx=>{
+    const fresh=await tx.get(claimRef);
+    const record=fresh.data();
+    if (!canRedeem(record,{...deal,id:claim.dealId},Date.now())) return false;
+    tx.update(claimRef,{status:"redeemed",redeemedAt:FieldValue.serverTimestamp()});
+    return true;
+  });
+  return result?{status:200,redeemed:true}:bad(409,"Claim already used or unavailable");
+}
