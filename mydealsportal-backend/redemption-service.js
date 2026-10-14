@@ -26,11 +26,18 @@ export async function createClaim(dealId) {
   if (!pinSetup.exists || !pinSetup.data()?.pinHash) return bad(409,"Store redemption is not yet enabled");
   const claimCode = newClaimCode();
   const claimRef = db().collection("redemptionClaims").doc(digest(claimCode));
-  await claimRef.create({
+  const quotaRef=db().collection("redemptionClaimQuotas").doc(dealId);
+  return db().runTransaction(async tx=>{
+    const quotaSnap=await tx.get(quotaRef);
+    const quota=nextClaimQuota(quotaSnap.data());
+    if(!quota.allowed)return bad(429,"Too many claims for this offer. Try again later.");
+    tx.set(quotaRef,{count:quota.count,windowStart:quota.windowStart});
+    tx.create(claimRef,{
     dealId, businessId:deal.businessId, status:"claimed",
     createdAt:FieldValue.serverTimestamp(), redeemedAt:null, failedPinAttempts:0, lockedUntil:0, expiresAt:Date.now()+30*24*60*60*1000
+    });
+    return {status:201,claimCode};
   });
-  return {status:201,claimCode};
 }
 
 // Requires a private store PIN hash provisioned by an authenticated owner.
