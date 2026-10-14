@@ -1,0 +1,24 @@
+name: Redemption draft checks
+on:
+  pull_request:
+    paths:
+      - 'mydealsportal-backend/redemption-*.js'
+      - 'mydealsportal-backend/store-config.js'
+      - '.github/workflows/redemption-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mydealsportal-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --check redemption-core.js && node --check redemption-service.js && node --check store-config.js
+      - run: node --test redemption-core.test.js
