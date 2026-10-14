@@ -8,5 +8,9 @@ export const redemptionConfig=Object.freeze({
 export function redemptionReady(config=redemptionConfig){
  return config.enabled===true && typeof config.appCheckSiteKey==="string" &&
  config.appCheckSiteKey.length>=10 &&
- Object.values(config.endpoints||{}).every(url=>typeof url==="string"&&/^https:\/\//.test(url));
+ ["create","status","redeem","configurePin"].every(key=>{
+  const url=config.endpoints?.[key];
+  if(typeof url!=="string"||!/^https:\/\//.test(url))return false;
+  try{return new URL(url).hostname==="us-central1-mydealsportal.cloudfunctions.net";}catch{return false;}
+ });
 }
