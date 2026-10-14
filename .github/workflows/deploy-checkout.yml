@@ -1,4 +1,4 @@
-name: Deploy MyDealsPortal checkout
+name: Deploy MyDealsPortal billing
 
 on:
   workflow_dispatch:
@@ -27,11 +27,11 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npm run check
-      - name: Deploy only liveCheckout
+      - name: Deploy live checkout, webhook and billing portal
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
           FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MYDEALSPORTAL }}
         run: |
           printf '%s' "$FIREBASE_CREDENTIALS" > "$GOOGLE_APPLICATION_CREDENTIALS"
           chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
-          npx --yes firebase-tools deploy --project mydealsportal --only functions:mydealsportal:liveCheckout --non-interactive --force
+          npx --yes firebase-tools deploy --project mydealsportal --only functions:mydealsportal:liveCheckout,functions:mydealsportal:liveStripeWebhook,functions:mydealsportal:liveBillingPortal --non-interactive --force
