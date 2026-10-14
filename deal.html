@@ -1,5 +1,6 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Deal | MyDealsPortal</title><link rel="stylesheet" href="styles.css"></head><body><div id="nav"></div><section class="section"><div class="wrap" id="content"><div class="panel">Loading deal...</div></div></section><div id="footer"></div><script src="app.js"></script><script type="module">
-import {getDealById,getBusinessById,getBusinessByName} from "./firebase-client.js";
+import {getDealById,getBusinessById,getBusinessByName,app} from "./firebase-client.js";
+import {redemptionConfig,redemptionReady} from "./redemption-config.js";
 document.getElementById("nav").innerHTML=nav();
 document.getElementById("footer").innerHTML=footer();
 const id=new URLSearchParams(location.search).get("id");
@@ -16,6 +17,15 @@ if(!d){
   const businessUrl=d.businessId?MDP_BASE+'business.html?id='+encodeURIComponent(d.businessId):MDP_BASE+'business.html?name='+encodeURIComponent(d.business);
   document.title=d.title+" | MyDealsPortal";
   content.innerHTML='<div class="detail"><div class="panel"><div class="card-badges"><span class="pill">'+esc(d.category)+'</span>'+(d.sample?'<span class="sample-badge">SAMPLE AD</span>':'')+'</div><h1 class="bigdeal">'+esc(d.title)+'</h1><div class="business">'+esc(d.business)+'</div><div class="meta">'+esc(d.city)+' · '+esc(d.zip)+'</div><div class="price">'+esc(d.price)+'</div><p style="font-size:1.08rem;line-height:1.65">'+esc(d.description)+'</p><div class="note"><b>Terms:</b> '+esc(d.terms)+'</div><div class="actions"><button class="btn btn-primary" id="claimDealBtn">Claim This Deal</button>'+(b&&b.website?'<a class="btn btn-soft" href="'+esc(b.website)+'" target="_blank" rel="sponsored noopener">Visit Business</a>':'<a class="btn btn-soft" href="'+businessUrl+'">View Business</a>')+'<a class="btn btn-ghost" href="'+businessUrl+'">More from this business</a><a class="btn btn-ghost" href="'+MDP_BASE+'contact.html?reason=report&deal='+encodeURIComponent(d.title)+'">Report Deal</a></div><div id="claimBox" class="claim-box" style="display:none"></div></div><aside class="panel"><h3>Business</h3><p><b>'+esc(d.business)+'</b></p><p class="tiny">'+esc(d.city)+' · '+esc(d.zip)+'</p><a class="btn btn-soft" href="'+businessUrl+'">View business profile</a></aside></div>';
+  if(redemptionReady(redemptionConfig) && !d.sample){
+    const {configureRedemptionAppCheck}=await import("./redemption-app-check-client.js");
+    const {mountRedemption}=await import("./redemption-ui.js");
+    configureRedemptionAppCheck(app,redemptionConfig.appCheckSiteKey);
+    document.getElementById("claimDealBtn").remove();
+    const realBox=document.getElementById("claimBox");
+    realBox.style.display="block";
+    mountRedemption(realBox,d.id,redemptionConfig.endpoints);
+  } else {
   const claimBtn=document.getElementById("claimDealBtn");
   const claimBox=document.getElementById("claimBox");
   const key="mdp_claim_"+d.id;
@@ -36,5 +46,6 @@ if(!d){
     renderClaim();
   });
   renderClaim();
+  }
 }
 </script></body></html>
