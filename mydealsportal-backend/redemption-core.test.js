@@ -22,6 +22,7 @@ test("redeem eligibility requires matching active deal and unused claim",()=>{
  assert.equal(canRedeem(claim,deal,4000),true);
  assert.equal(canRedeem({...claim,status:"redeemed"},deal,4000),false);
  assert.equal(canRedeem(claim,deal,6000),false);
+ assert.equal(canRedeem({...claim,expiresAt:null},deal,4000),false);
  assert.equal(canRedeem({...claim,expiresAt:"invalid"},deal,4000),false);
  assert.equal(canRedeem(claim,{...deal,active:false},4000),false);
  assert.equal(canRedeem(claim,{...deal,businessId:"other"},4000),false);
