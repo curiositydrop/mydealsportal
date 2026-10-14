@@ -16,6 +16,9 @@ This branch is **not production-ready**. Do not merge or deploy until the checkl
 - `redemption-client.js`: browser-side guest claim persistence.
 - `mydealsportal-backend/redemption-core.test.js`: initial unit tests.
 
+## Preview
+- Open `redemption-demo.html` from a local checkout or isolated preview environment. This is a mock flow, not connected to real customer coupons. The demo PIN is intentionally public and MUST NOT be reused for a business.
+
 ## REQUIRED before release
 - [ ] Design authenticated business-owner PIN provisioning/rotation, server-only PIN hash storage, and location-specific PIN support.
 - [ ] Implement public HTTPS endpoints with strict CORS, request validation, App Check or equivalent anti-abuse controls, IP/device throttling and quotas to limit anonymous claim flooding.
