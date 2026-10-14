@@ -1,7 +1,7 @@
 // Standalone draft endpoints. NOT exported from index.js and NOT deployed.
 // Claim IDs are bearer secrets. Only their hashes are stored in Firestore.
 // Requires abuse controls before public release (App Check/rate limits).
-import { createHash, randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { newClaimCode, canRedeem, verifyPin } from "./redemption-core.js";
 
