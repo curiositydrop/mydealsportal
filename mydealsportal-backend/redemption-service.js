@@ -14,11 +14,13 @@ export async function createClaim(dealId) {
   if (!validId(dealId)) return bad(400,"Invalid deal");
   const dealSnap = await db().collection("deals").doc(dealId).get();
   const deal = dealSnap.data();
-  if (!deal || deal.active !== true || deal.publishingApproved !== true) return bad(404,"Deal unavailable");
+  if (!deal || deal.sample === true || deal.active !== true || deal.publishingApproved !== true) return bad(404,"Deal unavailable");
   const bizSnap = await db().collection("businesses").doc(deal.businessId).get();
   const biz = bizSnap.data();
   if (!biz || biz.status !== "active" || !["active","trialing"].includes(biz.subscriptionStatus))
     return bad(404,"Deal unavailable");
+  const pinSetup = await db().collection("redemptionPrivate").doc(deal.businessId).get();
+  if (!pinSetup.exists || !pinSetup.data()?.pinHash) return bad(409,"Store redemption is not yet enabled");
   const claimCode = newClaimCode();
   const claimRef = db().collection("redemptionClaims").doc(digest(claimCode));
   await claimRef.create({
