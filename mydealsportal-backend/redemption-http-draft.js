@@ -5,6 +5,7 @@ import { getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { createClaim, redeemClaim, getClaimStatus } from "./redemption-service.js";
 import { saveStorePin } from "./store-config.js";
+import {verifyRedemptionApp} from "./redemption-app-check.js";
 if (!getApps().length) initializeApp();
 
 const origins = new Set([
@@ -17,7 +18,7 @@ function cors(req,res) {
   if(origin && !origins.has(origin)){res.status(403).json({error:"Origin not allowed"});return false;}
   if(origin){res.set("Access-Control-Allow-Origin",origin);res.set("Vary","Origin");}
   res.set("Access-Control-Allow-Methods","POST,OPTIONS");
-  res.set("Access-Control-Allow-Headers","Authorization,Content-Type");
+  res.set("Access-Control-Allow-Headers","Authorization,Content-Type,X-Firebase-AppCheck");
   res.set("Cache-Control","no-store");
   if(req.method==="OPTIONS"){res.status(204).end();return false;}
   if(req.method!=="POST"){res.status(405).json({error:"Method not allowed"});return false;}
@@ -29,9 +30,12 @@ function respond(res,result) {
   const {status,...body}=result;
   res.status(status||500).json(body);
 }
-async function handle(req,res,fn) {
+async function handle(req,res,fn,requireAppCheck=true) {
   if(!cors(req,res))return;
-  try { respond(res,await fn()); }
+  try {
+    if(requireAppCheck && !(await verifyRedemptionApp(req))){res.status(401).json({error:"App verification required"});return;}
+    respond(res,await fn());
+  }
   catch(e){console.error("Redemption request failed",e);res.status(500).json({error:"Unable to complete request"});}
 }
 async function ownerUid(req) {
@@ -51,4 +55,4 @@ export const draftConfigurePin=onRequest({region:"us-central1",maxInstances:2},(
     let uid;
     try{uid=await ownerUid(req);}catch{return {status:401,error:"Sign in required"};}
     return saveStorePin(uid,req.body?.pin);
-  }));
+  },false));
