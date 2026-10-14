@@ -27,10 +27,9 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npm run check
-      - name: Authenticate Google Cloud using Workload Identity Federation
+      - name: Authenticate Google Cloud with Firebase service account
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MYDEALSPORTAL }}
       - name: Deploy production functions
         run: npx --yes firebase-tools deploy --only functions --project mydealsportal --non-interactive
