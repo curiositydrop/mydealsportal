@@ -23,6 +23,7 @@ function cors(req,res) {
   if(req.method==="OPTIONS"){res.status(204).end();return false;}
   if(req.method!=="POST"){res.status(405).json({error:"Method not allowed"});return false;}
   if(Number(req.get("content-length")||0)>2048){res.status(413).json({error:"Request too large"});return false;}
+  if(!req.body || typeof req.body!=="object" || Array.isArray(req.body) || JSON.stringify(req.body).length>2048){res.status(413).json({error:"Invalid or oversized request"});return false;}
   if(!req.is("application/json")){res.status(415).json({error:"JSON required"});return false;}
   return true;
 }
