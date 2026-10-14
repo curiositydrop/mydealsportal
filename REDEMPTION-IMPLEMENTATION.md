@@ -40,3 +40,6 @@ No redemption endpoints are exported from `mydealsportal-backend/index.js`. The 
 - `redemption-demo.html`: standalone UI mock, not connected to Firebase.
 
 **Critical release blockers:** Anonymous claim endpoints require real abuse prevention (App Check, per-IP/business quotas and claim limits); server endpoints need integration tests with Firestore emulator; Firestore rules must deny client reads of private PINs and claims; claim issuance must be checked against current subscription and deal expiration. No production deploy or merge is authorized by this draft.
+
+## App Check rollout requirement
+The draft HTTPS redemption endpoints require Firebase App Check for public claim, status and redeem requests. Configure reCAPTCHA Enterprise and register the real production domain in Firebase App Check; then initialize `redemption-app-check-client.js` using the Firebase app and site key. This is deliberately NOT initialized in the live site yet. Firebase App Check alone is not a per-user rate limit. Verify browser requests, token replay behavior, quota rules, and transaction correctness before production export.
