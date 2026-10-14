@@ -8,7 +8,7 @@ export const liveKey = defineSecret("STRIPE_SECRET_KEY");
 export const webhookKey = defineSecret("STRIPE_WEBHOOK_SECRET");
 export function stripe() {
   const key = liveKey.value();
-  if (!key?.startsWith("sk_live_")) throw Error("Live key required");
+  if (!key || !/^(sk_live_|rk_live_)/.test(key)) throw Error("Live Stripe key required");
   return new Stripe(key);
 }
 export const businessDoc = uid => getFirestore().collection("businesses").doc(uid);
