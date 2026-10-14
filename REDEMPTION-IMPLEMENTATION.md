@@ -43,3 +43,10 @@ No redemption endpoints are exported from `mydealsportal-backend/index.js`. The 
 
 ## App Check rollout requirement
 The draft HTTPS redemption endpoints require Firebase App Check for public claim, status and redeem requests. Configure reCAPTCHA Enterprise and register the real production domain in Firebase App Check; then initialize `redemption-app-check-client.js` using the Firebase app and site key. This is deliberately NOT initialized in the live site yet. Firebase App Check alone is not a per-user rate limit. Verify browser requests, token replay behavior, quota rules, and transaction correctness before production export.
+
+## October 2026 integration checkpoint
+- Customer deal page and business dashboard now mount redemption interfaces behind `redemption-config.js`, which is disabled by default.
+- Browser requests use limited-use Firebase App Check tokens; the server rejects already-consumed tokens. Verify IAM permission for token consumption and production reCAPTCHA Enterprise configuration before release.
+- Anonymous incorrect PIN attempts are limited to the specific claim, not a shared business-wide lockout. This prevents an attacker with one claim from disabling every customer checkout. Cross-claim abuse controls still need integration testing.
+- GitHub PR tests are offline only. **Do not merge, deploy, or enable** until Firebase emulator concurrency/expiry tests, real browser App Check tests, and a staging checkout regression pass.
+- Legacy client-side claim codes remain visible while the new feature flag is disabled. They are not server-verifiable redemption codes; do not advertise them as secure redemption.
