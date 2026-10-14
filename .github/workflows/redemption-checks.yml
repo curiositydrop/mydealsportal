@@ -11,6 +11,7 @@ on:
       - 'redemption-config.js'
       - 'redemption-app-check-client.js'
       - 'deal.html'
+      - 'dashboard.html'
       - '.github/workflows/redemption-checks.yml'
   workflow_dispatch:
 permissions:
