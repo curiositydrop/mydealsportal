@@ -20,6 +20,7 @@ export const liveCheckout = onRequest({region:"us-central1",secrets:[liveKey]},a
       try {
         const prior=await api.checkout.sessions.retrieve(biz.pendingCheckoutId);
         if(prior.status==="open" && prior.url){res.json({url:prior.url});return;}
+        if(prior.payment_status==="paid"){res.status(409).json({error:"Payment received. Your subscription is being activated; please refresh your dashboard shortly."});return;}
       } catch (error) {
         console.warn("Previous checkout unavailable",error.message);
       }
@@ -36,6 +37,7 @@ export const liveCheckout = onRequest({region:"us-central1",secrets:[liveKey]},a
     stage="stripe_checkout_session";
     const session=await api.checkout.sessions.create({
       mode:"payment",customer,
+      payment_method_types:["card"],
       line_items:[{price:billingPlan(offer.plan).firstMonthPrice,quantity:1}],
       payment_intent_data:{setup_future_usage:"off_session"},
       metadata:{uid:user.uid,plan:offer.plan,slot:offer.slot||""},
