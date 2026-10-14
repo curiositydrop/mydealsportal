@@ -41,7 +41,7 @@ export async function activateAfterPayment(stripe,session){
     metadata:{uid,plan,project:"mydealsportal"}
   },{idempotencyKey:"mdp-sub-"+session.id});
   await business.update({stripeCustomerId:session.customer,stripeSubscriptionId:subscription.id,
-    checkoutSessionId:session.id,subscriptionStatus:subscription.status,status:"active",plan,
+    checkoutSessionId:session.id,pendingCheckoutId:FieldValue.delete(),subscriptionStatus:subscription.status,status:"active",plan,
     paidAt:FieldValue.serverTimestamp(),nextBillingAt:Timestamp.fromMillis(subscription.trial_end*1000)});
   const deals=await db.collection("deals").where("ownerUid","==",uid).get();
   for(let start=0;start<deals.docs.length;start+=450){
