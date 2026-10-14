@@ -19,6 +19,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm ci
       - run: node --check redemption-core.js && node --check redemption-service.js && node --check store-config.js
       - run: node --test redemption-core.test.js
