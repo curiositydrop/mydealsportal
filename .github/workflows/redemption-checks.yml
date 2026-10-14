@@ -20,4 +20,4 @@ jobs:
         with:
           node-version: '22'
       - run: node --check redemption-core.js && node --check redemption-service.js && node --check store-config.js
-      - run: node --test redemption-core.test.js
+      - run: node --test redemption-core.test.js redemption-client.test.js
