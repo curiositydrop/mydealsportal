@@ -23,7 +23,7 @@ export function verifyPin(pin, stored) {
 }
 export function canRedeem(claim, deal, now = Date.now()) {
   if (!claim || claim.status !== "claimed") return false;
-  if (!deal || deal.active !== true || deal.publishingApproved !== true) return false;
+  if (!deal || deal.sample === true || deal.active !== true || deal.publishingApproved !== true) return false;
   if (claim.dealId !== deal.id || claim.businessId !== deal.businessId) return false;
   if (typeof claim.expiresAt !== "number" || !Number.isFinite(claim.expiresAt) || claim.expiresAt <= now) return false;
   return true;
