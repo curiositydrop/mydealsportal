@@ -9,13 +9,14 @@ try{
   if(d)b=d.businessId?await getBusinessById(d.businessId):await getBusinessByName(d.business);
 }catch(e){console.warn(e)}
 if(d&&(d.active!==true||d.publishingApproved!==true))d=null;
+if(!d&&id&&id.startsWith("sample-"))d=seedDeals.find(x=>x.id===id)||null;
 if(d&&!b)b=businessInfo(d.business);
 if(!d){
   content.innerHTML='<div class="panel"><h2>This deal is not currently active.</h2><a class="btn btn-primary" href="'+MDP_BASE+'">Browse active deals</a></div>';
 }else{
   const businessUrl=d.businessId?MDP_BASE+'business.html?id='+encodeURIComponent(d.businessId):MDP_BASE+'business.html?name='+encodeURIComponent(d.business);
   document.title=d.title+" | MyDealsPortal";
-  content.innerHTML='<div class="detail"><div class="panel"><div class="card-badges"><span class="pill">'+esc(d.category)+'</span>'+(d.sample?'<span class="sample-badge">SAMPLE AD</span>':'')+'</div><h1 class="bigdeal">'+esc(d.title)+'</h1><div class="business">'+esc(d.business)+'</div><div class="meta">'+esc(d.city)+' · '+esc(d.zip)+'</div><div class="price">'+esc(d.price)+'</div><p style="font-size:1.08rem;line-height:1.65">'+esc(d.description)+'</p><div class="note"><b>Terms:</b> '+esc(d.terms)+'</div><div class="actions"><button class="btn btn-primary" id="claimDealBtn">Claim This Deal</button>'+(b&&b.website?'<a class="btn btn-soft" href="'+esc(b.website)+'" target="_blank" rel="sponsored noopener">Visit Business</a>':'<a class="btn btn-soft" href="'+businessUrl+'">View Business</a>')+'<a class="btn btn-ghost" href="'+businessUrl+'">More from this business</a><a class="btn btn-ghost" href="'+MDP_BASE+'contact.html?reason=report&deal='+encodeURIComponent(d.title)+'">Report Deal</a></div><div id="claimBox" class="claim-box" style="display:none"></div></div><aside class="panel"><h3>Business</h3><p><b>'+esc(d.business)+'</b></p><p class="tiny">'+esc(d.city)+' · '+esc(d.zip)+'</p><a class="btn btn-soft" href="'+businessUrl+'">View business profile</a></aside></div>';
+  content.innerHTML='<div class="detail"><div class="panel"><div class="card-badges"><span class="pill">'+esc(d.category)+'</span>'+(d.sample?'<span class="sample-badge">SAMPLE AD</span>':'')+'</div><h1 class="bigdeal">'+esc(d.title)+'</h1><div class="business">'+esc(d.business)+'</div><div class="meta">'+esc(d.city)+' · '+esc(d.zip)+'</div><div class="price">'+esc(d.price)+'</div><p style="font-size:1.08rem;line-height:1.65">'+esc(d.description)+'</p><div class="note"><b>Terms:</b> '+esc(d.terms)+'</div><div class="actions">'+(d.sample?'<div class="note"><b>Sample ad only.</b> This is an example, not a real redeemable offer.</div>':'<button class="btn btn-primary" id="claimDealBtn">Claim This Deal</button>')+''+(b&&b.website?'<a class="btn btn-soft" href="'+esc(b.website)+'" target="_blank" rel="sponsored noopener">Visit Business</a>':'<a class="btn btn-soft" href="'+businessUrl+'">View Business</a>')+'<a class="btn btn-ghost" href="'+businessUrl+'">More from this business</a><a class="btn btn-ghost" href="'+MDP_BASE+'contact.html?reason=report&deal='+encodeURIComponent(d.title)+'">Report Deal</a></div><div id="claimBox" class="claim-box" style="display:none"></div></div><aside class="panel"><h3>Business</h3><p><b>'+esc(d.business)+'</b></p><p class="tiny">'+esc(d.city)+' · '+esc(d.zip)+'</p><a class="btn btn-soft" href="'+businessUrl+'">View business profile</a></aside></div>';
   const claimBtn=document.getElementById("claimDealBtn");
   const claimBox=document.getElementById("claimBox");
   const key="mdp_claim_"+d.id;
@@ -28,13 +29,13 @@ if(!d){
     claimBox.style.display="block";
     claimBox.innerHTML='<div class="claim-label">YOUR CLAIM CODE</div><div class="claim-code">'+esc(data.code)+'</div><div class="tiny">Claimed '+esc(data.when)+'</div><p>Show this screen to the business when redeeming the offer.</p>';
   }
-  claimBtn.addEventListener("click",()=>{
+  if(!d.sample)claimBtn.addEventListener("click",()=>{
     if(!localStorage.getItem(key)){
       const code="MDP-"+Math.random().toString(36).slice(2,8).toUpperCase();
       localStorage.setItem(key,JSON.stringify({code,when:new Date().toLocaleString()}));
     }
     renderClaim();
   });
-  renderClaim();
+  if(!d.sample)renderClaim();
 }
 </script></body></html>
