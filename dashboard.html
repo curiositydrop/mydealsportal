@@ -55,6 +55,16 @@ if(biz.plan==="standard")displayPrice.innerHTML="$49.99<span>/month</span>";
 document.getElementById("subscribeBtn").style.display=subscribed?"none":"";
 document.getElementById("manageBillingBtn").style.display=biz.stripeCustomerId?"":"none";
 document.getElementById("billingStatus").textContent=subscribed?"Your advertising is active. Your deals can appear publicly.":new URLSearchParams(location.search).get("checkout")==="success"?"Checkout returned successfully. Waiting for confirmed payment and account activation; refresh shortly.":"Your saved deals appear publicly after confirmed payment.";
+if(new URLSearchParams(location.search).get("checkout")==="success"){
+ const key="mdp-checkout-activation-retries";
+ if(subscribed){sessionStorage.removeItem(key);history.replaceState(null,"",location.pathname);}
+ else{
+  const attempts=Number(sessionStorage.getItem(key)||0);
+  if(attempts<5){sessionStorage.setItem(key,String(attempts+1));setTimeout(()=>location.reload(),6000);}
+  else{sessionStorage.removeItem(key);document.getElementById("billingStatus").textContent="Payment confirmation is taking longer than expected. Do not pay again. Please contact support if your account is not active shortly.";}
+ }
+}
+
 async function billingRequest(endpoint){
  const message=document.getElementById("paymentMessage");
  message.textContent="Opening secure Stripe billing...";
