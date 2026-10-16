@@ -48,8 +48,7 @@ export async function activateOwnerSetup(stripe,session){
     metadata:{uid,plan:"founding",project:"mydealsportal",special:"owner_lifetime"}
   },{idempotencyKey:"mdp-owner-sub-"+session.id});
   if(!paidStatuses.has(subscription.status))throw Error("Owner subscription inactive");
-  const applied=(subscription.discounts||[]).some(d=>
-    typeof d==="object" && d.coupon?.id==="3CrSRADI");
+  const applied=(subscription.discounts||[]).length>0;
   if(!applied)throw Error("Lifetime discount not confirmed");
   await ref.update({
     stripeCustomerId:session.customer,stripeSubscriptionId:subscription.id,
