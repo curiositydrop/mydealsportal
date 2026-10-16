@@ -19,11 +19,14 @@ export async function activateOwnerSetup(stripe,session){
   if(!session.livemode || session.mode!=="setup" || session.status!=="complete"
      || session.metadata?.special!=="owner_lifetime")return;
   const uid=session.metadata.uid;
+  if(!uid)throw Error("Owner identity missing");
   const ref=db.collection("businesses").doc(uid),snap=await ref.get();
   const business=snap.data();
   if(!business || business.ownerUid!==uid ||
      business.name?.trim().toLowerCase()!=="new leaf painting co." ||
      session.customer!=="cus_VRLMvrEopLMLid")throw Error("Owner offer mismatch");
+  if(business.pendingCheckoutId!==session.id && business.checkoutSessionId!==session.id)
+    throw Error("Owner checkout not linked to business");
   const customer=await stripe.customers.retrieve(session.customer);
   if(customer.deleted || customer.email?.toLowerCase()!=="newleafpaintingcompany@gmail.com")
     throw Error("Owner email mismatch");
@@ -45,6 +48,9 @@ export async function activateOwnerSetup(stripe,session){
     metadata:{uid,plan:"founding",project:"mydealsportal",special:"owner_lifetime"}
   },{idempotencyKey:"mdp-owner-sub-"+session.id});
   if(!paidStatuses.has(subscription.status))throw Error("Owner subscription inactive");
+  const applied=(subscription.discounts||[]).some(d=>
+    typeof d==="object" && d.coupon?.id==="3CrSRADI");
+  if(!applied)throw Error("Lifetime discount not confirmed");
   await ref.update({
     stripeCustomerId:session.customer,stripeSubscriptionId:subscription.id,
     checkoutSessionId:session.id,pendingCheckoutId:FieldValue.delete(),
