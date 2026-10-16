@@ -1,7 +1,7 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { liveKey, webhookKey, stripe } from "./live-common.js";
-import { activateAfterPayment, syncSubscription } from "./live-activation.js";
+import { activateAfterPayment, activateOwnerSetup, syncSubscription } from "./live-activation.js";
 export const liveStripeWebhook=onRequest({region:"us-central1",secrets:[liveKey,webhookKey]},async(req,res)=>{
   if(req.method!=="POST"){res.status(405).end();return;}
   const api=stripe();let event;
@@ -11,7 +11,9 @@ export const liveStripeWebhook=onRequest({region:"us-central1",secrets:[liveKey,
   try {
     const ref=getFirestore().collection("stripeEvents").doc(event.id);
     if((await ref.get()).exists){res.status(200).send("Already processed");return;}
-    if(event.type==="checkout.session.completed"||event.type==="checkout.session.async_payment_succeeded")
+    if(event.type==="checkout.session.completed" && event.data.object.mode==="setup")
+      await activateOwnerSetup(api,event.data.object);
+    else if(event.type==="checkout.session.completed"||event.type==="checkout.session.async_payment_succeeded")
       await activateAfterPayment(api,event.data.object);
     if(event.type.startsWith("customer.subscription."))
       await syncSubscription(event.data.object);
