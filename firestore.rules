@@ -33,6 +33,17 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Redemption documents are server-only. Firebase Admin SDK in Functions bypasses these rules.
+    match /redemptionPrivate/{document=**} {
+      allow read, write: if false;
+    }
+    match /redemptionClaims/{document=**} {
+      allow read, write: if false;
+    }
+    match /redemptionClaimQuotas/{document=**} {
+      allow read, write: if false;
+    }
+
     match /deals/{dealId} {
       allow read: if (resource.data.active == true && resource.data.publishingApproved == true)
                   || (signedIn() && resource.data.ownerUid == request.auth.uid);

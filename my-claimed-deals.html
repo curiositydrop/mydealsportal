@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Claimed Deals | MyDealsPortal</title><link rel="stylesheet" href="styles.css"></head>
+<body><div id="nav"></div><main class="section"><div class="wrap"><h1>My Claimed Deals</h1><p>Claims saved on this device. No account needed.</p><div id="claims" class="panel"></div></div></main><div id="footer"></div>
+<script src="app.js"></script>
+<script type="module">
+import {allSavedClaims} from "./redemption-client.js";
+document.getElementById("nav").innerHTML=nav();
+document.getElementById("footer").innerHTML=footer();
+const holder=document.getElementById("claims");
+const items=allSavedClaims();
+if(!items.length)holder.textContent="No saved deals on this device yet.";
+for(const item of items){
+ const row=document.createElement("div");
+ row.style.padding="16px 0";
+ row.style.borderBottom="1px solid #ddd";
+ const link=document.createElement("a");
+ link.href="deal.html?id="+encodeURIComponent(item.dealId);
+ link.textContent="View saved deal";
+ const code=document.createElement("p");
+ code.textContent=item.status==="redeemed"?"Redeemed":item.code;
+ const note=document.createElement("p");
+ note.textContent=item.status==="redeemed"?"Already redeemed — cannot use again":"Saved on this device. Show at checkout.";
+ row.append(link,code,note);
+ holder.append(row);
+}
+</script></body></html>
