@@ -26,7 +26,8 @@ export const liveCheckout = onRequest({region:"us-central1",secrets:[liveKey]},a
       }
     }
     stage="offer_selection";
-    const offer=await chooseOffer(user.uid);
+    const complimentary=user.uid==="KBqo5oM9IEdOQLB9ATwpsMrp6Vx2" && user.email?.toLowerCase()==="newleafpaintingcompany@gmail.com";
+    const offer=complimentary?{plan:"founding",slot:null}:await chooseOffer(user.uid);
     stage="stripe_customer";
     let customer=biz.stripeCustomerId;
     if(!customer){
@@ -35,7 +36,16 @@ export const liveCheckout = onRequest({region:"us-central1",secrets:[liveKey]},a
       await ref.update({stripeCustomerId:customer});
     }
     stage="stripe_checkout_session";
-    const session=await api.checkout.sessions.create({
+    const session=await api.checkout.sessions.create(complimentary?{
+      mode:"subscription",customer,payment_method_types:["card"],payment_method_collection:"if_required",
+      line_items:[{price:billingPlan("founding").recurringPrice,quantity:1}],
+      discounts:[{coupon:"3CrSRADI"}],
+      metadata:{uid:user.uid,plan:"founding",complimentary:"newleaf"},
+      subscription_data:{metadata:{uid:user.uid,plan:"founding",project:"mydealsportal",complimentary:"newleaf"}},
+      success_url:"https://www.mydealsportal.com/dashboard.html?checkout=success",
+      cancel_url:"https://www.mydealsportal.com/dashboard.html?checkout=cancel",
+      expires_at:Math.floor(Date.now()/1000)+1800
+    }:{
       mode:"payment",customer,
       payment_method_types:["card"],
       line_items:[{price:billingPlan(offer.plan).firstMonthPrice,quantity:1}],
