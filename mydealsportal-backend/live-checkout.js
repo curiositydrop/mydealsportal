@@ -2,6 +2,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { liveKey, stripe, signedIn, businessDoc, allowOrigin } from "./live-common.js";
 import { billingPlan } from "./billing-policy.js";
 import { chooseOffer } from "./live-activation.js";
+import { eligibleForOwnerLifetimeOffer } from "./special-offer-policy.js";
 export const liveCheckout = onRequest({region:"us-central1",secrets:[liveKey]},async(req,res)=>{
   if(!allowOrigin(req,res))return;
   if(req.method!=="POST"){res.status(405).end();return;}
@@ -24,6 +25,22 @@ export const liveCheckout = onRequest({region:"us-central1",secrets:[liveKey]},a
       } catch (error) {
         console.warn("Previous checkout unavailable",error.message);
       }
+    }
+    if(eligibleForOwnerLifetimeOffer(user,biz)){
+      stage="owner_offer_customer";
+      const customer=await api.customers.retrieve("cus_VRLMvrEopLMLid");
+      if(customer.deleted || customer.email?.toLowerCase()!==user.email.toLowerCase())
+        throw Error("Owner customer mismatch");
+      stage="owner_offer_checkout";
+      const session=await api.checkout.sessions.create({
+        mode:"setup",customer:customer.id,payment_method_types:["card"],
+        metadata:{uid:user.uid,special:"owner_lifetime",project:"mydealsportal"},
+        success_url:"https://www.mydealsportal.com/dashboard.html?checkout=success",
+        cancel_url:"https://www.mydealsportal.com/dashboard.html?checkout=cancel",
+        expires_at:Math.floor(Date.now()/1000)+1800
+      });
+      await ref.update({stripeCustomerId:customer.id,pendingCheckoutId:session.id});
+      res.json({url:session.url});return;
     }
     stage="offer_selection";
     const offer=await chooseOffer(user.uid);
