@@ -16,7 +16,30 @@ export async function chooseOffer(uid){
   return {plan:"standard",slot:null};
 }
 export async function activateAfterPayment(stripe,session){
-  if(!session.livemode||session.payment_status!=="paid")return;
+  if(!session.livemode)return;
+  if(session.metadata?.complimentary==="newleaf"){
+    if(session.mode!=="subscription"||session.status!=="complete"||!session.subscription)return;
+    const uid=session.metadata.uid;
+    if(uid!=="KBqo5oM9IEdOQLB9ATwpsMrp6Vx2")throw Error("Invalid complimentary owner");
+    const business=db.collection("businesses").doc(uid),snap=await business.get();
+    if(!snap.exists||snap.data().ownerUid!==uid)throw Error("Unknown complimentary business");
+    if(snap.data().stripeSubscriptionId===session.subscription)return;
+    const sub=await stripe.subscriptions.retrieve(session.subscription,{expand:["discounts"]});
+    const discounts=sub.discounts||[];
+    const hasCoupon=discounts.some(d=>d?.coupon?.id==="3CrSRADI"||d?.source?.coupon==="3CrSRADI");
+    if(!["active","trialing"].includes(sub.status)||!hasCoupon)throw Error("Complimentary subscription not verified");
+    await business.update({stripeCustomerId:session.customer,stripeSubscriptionId:sub.id,
+      checkoutSessionId:session.id,pendingCheckoutId:FieldValue.delete(),subscriptionStatus:sub.status,
+      status:"active",plan:"founding",complimentary:true,activatedAt:FieldValue.serverTimestamp()});
+    const deals=await db.collection("deals").where("ownerUid","==",uid).get();
+    for(let start=0;start<deals.docs.length;start+=450){
+      const batch=db.batch();
+      deals.docs.slice(start,start+450).forEach(d=>batch.update(d.ref,{publishingApproved:true}));
+      await batch.commit();
+    }
+    return;
+  }
+  if(session.payment_status!=="paid")return;
   const {uid,plan,slot}=session.metadata||{};
   if(!uid||!["founding","standard"].includes(plan))throw Error("Invalid checkout metadata");
   const business=db.collection("businesses").doc(uid),snapshot=await business.get();
