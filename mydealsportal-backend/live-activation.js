@@ -15,6 +15,49 @@ export async function chooseOffer(uid){
   }
   return {plan:"standard",slot:null};
 }
+export async function activateOwnerSetup(stripe,session){
+  if(!session.livemode || session.mode!=="setup" || session.status!=="complete"
+     || session.metadata?.special!=="owner_lifetime")return;
+  const uid=session.metadata.uid;
+  const ref=db.collection("businesses").doc(uid),snap=await ref.get();
+  const business=snap.data();
+  if(!business || business.ownerUid!==uid ||
+     business.name?.trim().toLowerCase()!=="new leaf painting co." ||
+     session.customer!=="cus_VRLMvrEopLMLid")throw Error("Owner offer mismatch");
+  const customer=await stripe.customers.retrieve(session.customer);
+  if(customer.deleted || customer.email?.toLowerCase()!=="newleafpaintingcompany@gmail.com")
+    throw Error("Owner email mismatch");
+  if(business.stripeSubscriptionId){
+    if(business.checkoutSessionId===session.id)return;
+    throw Error("Subscription already exists");
+  }
+  const setup=await stripe.setupIntents.retrieve(session.setup_intent);
+  if(setup.status!=="succeeded" || !setup.payment_method || setup.customer!==session.customer)
+    throw Error("Card setup not completed");
+  await stripe.customers.update(session.customer,{
+    invoice_settings:{default_payment_method:setup.payment_method}
+  });
+  const subscription=await stripe.subscriptions.create({
+    customer:session.customer,
+    items:[{price:billingPlan("founding").recurringPrice}],
+    discounts:[{coupon:"3CrSRADI"}],
+    default_payment_method:setup.payment_method,
+    metadata:{uid,plan:"founding",project:"mydealsportal",special:"owner_lifetime"}
+  },{idempotencyKey:"mdp-owner-sub-"+session.id});
+  if(!paidStatuses.has(subscription.status))throw Error("Owner subscription inactive");
+  await ref.update({
+    stripeCustomerId:session.customer,stripeSubscriptionId:subscription.id,
+    checkoutSessionId:session.id,pendingCheckoutId:FieldValue.delete(),
+    subscriptionStatus:subscription.status,status:"active",plan:"founding",
+    lifetimeFree:true,activatedAt:FieldValue.serverTimestamp()
+  });
+  const deals=await db.collection("deals").where("ownerUid","==",uid).get();
+  for(let start=0;start<deals.docs.length;start+=450){
+    const batch=db.batch();
+    deals.docs.slice(start,start+450).forEach(d=>batch.update(d.ref,{publishingApproved:true}));
+    await batch.commit();
+  }
+}
 export async function activateAfterPayment(stripe,session){
   if(!session.livemode||session.payment_status!=="paid")return;
   const {uid,plan,slot}=session.metadata||{};
