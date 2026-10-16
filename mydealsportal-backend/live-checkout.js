@@ -16,17 +16,20 @@ export const liveCheckout = onRequest({region:"us-central1",secrets:[liveKey]},a
     if(["active","trialing"].includes(biz.subscriptionStatus))throw Error("Already subscribed");
     stage="stripe_initialization";
     const api=stripe();
+    const ownerEligible=eligibleForOwnerLifetimeOffer(user,biz);
     stage="previous_checkout";
     if(biz.pendingCheckoutId){
       try {
         const prior=await api.checkout.sessions.retrieve(biz.pendingCheckoutId);
-        if(prior.status==="open" && prior.url){res.json({url:prior.url});return;}
+        if(prior.status==="open" && prior.url &&
+           ((ownerEligible && prior.mode==="setup" && prior.metadata?.special==="owner_lifetime") ||
+            (!ownerEligible && prior.mode==="payment"))){res.json({url:prior.url});return;}
         if(prior.payment_status==="paid"){res.status(409).json({error:"Payment received. Your subscription is being activated; please refresh your dashboard shortly."});return;}
       } catch (error) {
         console.warn("Previous checkout unavailable",error.message);
       }
     }
-    if(eligibleForOwnerLifetimeOffer(user,biz)){
+    if(ownerEligible){
       stage="owner_offer_customer";
       const customer=await api.customers.retrieve("cus_VRLMvrEopLMLid");
       if(customer.deleted || customer.email?.toLowerCase()!==user.email.toLowerCase())
