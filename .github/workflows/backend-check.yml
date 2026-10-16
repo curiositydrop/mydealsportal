@@ -1,0 +1,20 @@
+name: Backend safety checks
+on:
+  pull_request:
+    paths:
+      - 'mydealsportal-backend/**'
+      - '.github/workflows/backend-check.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mydealsportal-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-package-lock
+      - run: npm run check

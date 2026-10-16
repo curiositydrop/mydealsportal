@@ -1,0 +1,12 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {eligibleForOwnerLifetimeOffer as eligible} from "./special-offer-policy.js";
+const user={uid:"owner",email:"newleafpaintingcompany@gmail.com",email_verified:true};
+const biz={ownerUid:"owner",name:"New Leaf Painting Co.",subscriptionStatus:"unpaid"};
+test("verified owner is eligible",()=>assert.equal(eligible(user,biz),true));
+test("unverified email is rejected",()=>assert.equal(eligible({...user,email_verified:false},biz),false));
+test("different user is rejected",()=>assert.equal(eligible({...user,uid:"other"},biz),false));
+test("different email is rejected",()=>assert.equal(eligible({...user,email:"other@example.com"},biz),false));
+test("different business is rejected",()=>assert.equal(eligible(user,{...biz,name:"Other Business"}),false));
+test("existing subscription is rejected",()=>assert.equal(eligible(user,{...biz,stripeSubscriptionId:"sub_existing"}),false));
+test("active business is rejected",()=>assert.equal(eligible(user,{...biz,subscriptionStatus:"active"}),false));
