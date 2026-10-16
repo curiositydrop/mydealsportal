@@ -26,7 +26,7 @@ export async function activateAfterPayment(stripe,session){
     if(snap.data().stripeSubscriptionId===session.subscription)return;
     const sub=await stripe.subscriptions.retrieve(session.subscription,{expand:["discounts"]});
     const discounts=sub.discounts||[];
-    const hasCoupon=discounts.some(d=>d?.coupon?.id==="3CrSRADI"||d?.source?.coupon==="3CrSRADI");
+    const hasCoupon=discounts.some(d=>d?.coupon?.id==="3CrSRADI"||d?.source?.coupon==="3CrSRADI"||d?.source?.coupon?.id==="3CrSRADI");
     if(!["active","trialing"].includes(sub.status)||!hasCoupon)throw Error("Complimentary subscription not verified");
     await business.update({stripeCustomerId:session.customer,stripeSubscriptionId:sub.id,
       checkoutSessionId:session.id,pendingCheckoutId:FieldValue.delete(),subscriptionStatus:sub.status,
