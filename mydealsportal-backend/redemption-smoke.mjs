@@ -7,7 +7,7 @@ const base=process.env.REDEMPTION_TEST_BASE_URL;
 const dealId=process.env.REDEMPTION_TEST_DEAL_ID;
 const pin=process.env.REDEMPTION_TEST_PIN;
 if(!base||!dealId||!/^[0-9]{6}$/.test(pin||'')){
-  throw new Error('Set RED EMPTION_TEST_BASE_URL (without the space), REDEMPTION_TEST_DEAL_ID, and REDEMPTION_TEST_PIN for a staging or emulator environment');
+  throw new Error('Set REDEMPTION_TEST_BASE_URL, REDEMPTION_TEST_DEAL_ID, and REDEMPTION_TEST_PIN for a staging or emulator environment');
 }
 const url=new URL(base);
 if(!['localhost','127.0.0.1','::1'].includes(url.hostname)&&!url.hostname.startsWith('staging-')){
