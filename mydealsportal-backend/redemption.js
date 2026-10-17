@@ -108,7 +108,6 @@ export const redeemDealClaim=onRequest({region:"us-central1"},async(req,res)=>{
     if(!claim||claim.status!=="claimed")return sendError(res,400,"Code invalid or already redeemed");
     if(typeof claim.businessId!=="string"||typeof claim.dealId!=="string")return sendError(res,400,"Invalid claim");
     if((claim.failedPinAttempts||0)>=5)return sendError(res,429,"This claim is locked. Contact the business.");
-    if(!await throttle("pin-business-"+claim.businessId,25,3600000))return sendError(res,429,"Redemption temporarily locked for this business");
     const [dealSnap,secretSnap,businessSnap]=await Promise.all([
       db.collection("deals").doc(claim.dealId).get(),
       db.collection("redemptionSecrets").doc(claim.businessId).get(),
@@ -118,7 +117,7 @@ export const redeemDealClaim=onRequest({region:"us-central1"},async(req,res)=>{
     if(!verifyPin(pin,secretSnap.data()?.hash)){
       await db.runTransaction(async tx=>{
         const current=await tx.get(claimRef);
-        if(current.data()?.status==="claimed")tx.update(claimRef,{failedPinAttempts:FieldValue.increment(1)});
+        if(current.data()?.status==="claimed"&&(current.data()?.failedPinAttempts||0)<5)tx.update(claimRef,{failedPinAttempts:FieldValue.increment(1)});
       });
       return sendError(res,400,"Code or PIN incorrect");
     }
