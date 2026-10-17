@@ -69,6 +69,17 @@ export const issueDealClaim=onRequest({region:"us-central1"},async(req,res)=>{
     return res.json({code});
   }catch(e){console.error("Claim issue",e);return sendError(res,500,"Could not claim deal");}
 });
+export const getDealClaimStatus=onRequest({region:"us-central1"},async(req,res)=>{
+  if(!route(req,res))return;
+  try{
+    if(!await throttle("status-"+throttleKey(req),120,3600000))return sendError(res,429,"Too many requests");
+    const code=req.body?.code;
+    if(typeof code!=="string"||!codePattern.test(code))return sendError(res,400,"Invalid claim code");
+    const snap=await db.collection("dealClaims").doc(claimKey(code)).get();
+    if(!snap.exists)return sendError(res,404,"Claim not found");
+    return res.json({status:snap.data().status});
+  }catch(e){console.error("Claim status",e);return sendError(res,500,"Could not check claim");}
+});
 export const redeemDealClaim=onRequest({region:"us-central1"},async(req,res)=>{
   if(!route(req,res))return;
   try {
