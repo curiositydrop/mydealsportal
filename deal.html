@@ -33,8 +33,13 @@ if(!d){
     let data;
     try{data=JSON.parse(saved)}catch{return}
     if(!/^MDP-[A-F0-9]{24}$/.test(data.code||""))return;
-    claimBtn.textContent="Deal Claimed";
+    claimBtn.textContent=data.status==="redeemed"?"Redeemed":"Deal Claimed";
     claimBtn.disabled=true;
+    if(data.status==="redeemed"){
+      claimBox.style.display="block";
+      claimBox.innerHTML="<h3>Deal Redeemed</h3><p>This offer has already been redeemed.</p>";
+      return;
+    }
     claimBox.style.display="block";
     claimBox.innerHTML='<div class="claim-label">YOUR CLAIM CODE</div><div class="claim-code">'+esc(data.code)+'</div><div class="tiny">Claimed '+esc(data.when)+'</div><p>Show this screen to the business when redeeming the offer.</p><label class="label" for="redeemPin">Business redemption PIN</label><input id="redeemPin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Business enters six digits"><div class="actions"><button class="btn btn-primary" id="redeemBtn">Redeem Deal</button></div><p class="tiny" id="redeemMessage"></p>';
     document.getElementById("redeemBtn").onclick=async()=>{
@@ -43,7 +48,7 @@ if(!d){
       btn.disabled=true;msg.textContent="Verifying...";
       try{
         await callRedemption("redeemDealClaim",{code:data.code,pin});
-        localStorage.removeItem(key);
+        localStorage.setItem(key,JSON.stringify({...data,status:"redeemed"}));
         claimBox.innerHTML='<h3>Deal Redeemed</h3><p>This offer has been redeemed successfully.</p>';
         claimBtn.textContent="Redeemed";
       }catch(e){msg.textContent=e.message;btn.disabled=false;document.getElementById("redeemPin").value=""}
@@ -70,6 +75,7 @@ if(!d){
         if(/^MDP-[A-F0-9]{24}$/.test(data.code||"")){
           const state=await callRedemption("getDealClaimStatus",{code:data.code});
           if(state.status==="redeemed"){
+            localStorage.setItem(key,JSON.stringify({...data,status:"redeemed"}));
             claimBtn.textContent="Redeemed";claimBtn.disabled=true;
             claimBox.style.display="block";claimBox.innerHTML="<h3>Deal Redeemed</h3><p>This offer has already been redeemed.</p>";
           }
