@@ -61,9 +61,11 @@ export const issueDealClaim=onRequest({region:"us-central1"},async(req,res)=>{
     if(!eligibleDeal(dealSnap.data()))return sendError(res,404,"Deal unavailable");
     const businessSnap=await db.collection("businesses").doc(dealSnap.data().businessId).get();
     if(!businessSnap.exists||!["active","trialing"].includes(businessSnap.data().subscriptionStatus)||businessSnap.data().status!=="active")return sendError(res,404,"Deal unavailable");
+    const pinSnap=await db.collection("redemptionSecrets").doc(dealSnap.data().businessId).get();
+    if(!pinSnap.exists)return sendError(res,409,"This business has not enabled deal redemption yet");
     const code="MDP-"+randomBytes(12).toString("hex").toUpperCase();
     await db.collection("dealClaims").doc(claimKey(code)).create({
-      dealId,businessId:dealSnap.data().businessId,status:"claimed",
+      dealId,businessId:dealSnap.data().businessId,status:"claimed",failedPinAttempts:0,
       claimedAt:FieldValue.serverTimestamp()
     });
     return res.json({code});
