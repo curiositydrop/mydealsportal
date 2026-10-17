@@ -97,7 +97,7 @@ export const redeemDealClaim=onRequest({region:"us-central1"},async(req,res)=>{
       db.collection("redemptionSecrets").doc(claim.businessId).get(),
       db.collection("businesses").doc(claim.businessId).get()
     ]);
-    if(!eligibleDeal(dealSnap.data())||dealSnap.data().businessId!==claim.businessId||!businessSnap.exists||businessSnap.data().status!=="active")return sendError(res,400,"Code or PIN incorrect");
+    if(!eligibleDeal(dealSnap.data())||dealSnap.data().businessId!==claim.businessId||!businessSnap.exists||businessSnap.data().status!=="active"||!["active","trialing"].includes(businessSnap.data().subscriptionStatus))return sendError(res,400,"Code or PIN incorrect");
     if(!verifyPin(pin,secretSnap.data()?.hash)){
       await db.runTransaction(async tx=>{
         const current=await tx.get(claimRef);
