@@ -10,8 +10,8 @@ if(!base||!dealId||!/^[0-9]{6}$/.test(pin||'')){
   throw new Error('Set REDEMPTION_TEST_BASE_URL, REDEMPTION_TEST_DEAL_ID, and REDEMPTION_TEST_PIN for a staging or emulator environment');
 }
 const url=new URL(base);
-if(!['localhost','127.0.0.1','::1'].includes(url.hostname)&&!url.hostname.startsWith('staging-')){
-  throw new Error('Refusing to run against a non-emulator/non-staging hostname');
+if(!['localhost','127.0.0.1','[::1]'].includes(url.hostname)){
+  throw new Error('Refusing to run against anything except the local Firebase emulator');
 }
 if(url.hostname.includes('mydealsportal.cloudfunctions.net')||url.hostname==='mydealsportal.com'){
   throw new Error('Production endpoint prohibited');
