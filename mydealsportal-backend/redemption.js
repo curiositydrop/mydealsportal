@@ -106,6 +106,7 @@ export const redeemDealClaim=onRequest({region:"us-central1"},async(req,res)=>{
     const claimRef=db.collection("dealClaims").doc(claimKey(code));
     const claimSnap=await claimRef.get(),claim=claimSnap.data();
     if(!claim||claim.status!=="claimed")return sendError(res,400,"Code invalid or already redeemed");
+    if(typeof claim.businessId!=="string"||typeof claim.dealId!=="string")return sendError(res,400,"Invalid claim");
     if((claim.failedPinAttempts||0)>=5)return sendError(res,429,"This claim is locked. Contact the business.");
     if(!await throttle("pin-business-"+claim.businessId,25,3600000))return sendError(res,429,"Redemption temporarily locked for this business");
     const [dealSnap,secretSnap,businessSnap]=await Promise.all([
