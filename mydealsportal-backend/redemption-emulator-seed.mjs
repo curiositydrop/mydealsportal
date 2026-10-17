@@ -1,0 +1,11 @@
+import {initializeApp} from 'firebase-admin/app';
+import {getFirestore} from 'firebase-admin/firestore';
+import {hashPin} from './redemption-policy.js';
+if(process.env.GCLOUD_PROJECT!=='demo-mydealsportal'||!process.env.FIRESTORE_EMULATOR_HOST)throw Error('Emulator only');
+initializeApp({projectId:'demo-mydealsportal'});
+const db=getFirestore();
+const businessId='redemptiontestowner',dealId='redemptiontestdeal123',pin='738291';
+await db.doc('businesses/'+businessId).set({ownerUid:businessId,status:'active',subscriptionStatus:'active',redemptionPinSet:true});
+await db.doc('deals/'+dealId).set({businessId,ownerUid:businessId,active:true,publishingApproved:true});
+await db.doc('redemptionSecrets/'+businessId).set({hash:hashPin(pin)});
+console.log('Seeded isolated emulator test business and deal');

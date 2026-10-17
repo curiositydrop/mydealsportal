@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start": "node index.js",
-    "check": "node --check index.js && node --check billing-policy.js && node --check live-common.js && node --check live-activation.js && node --check live-checkout.js && node --check live-webhook.js && node --check live-portal.js && node --check publish-paid-deals.js && node --test billing-policy.test.js && node --check special-offer-policy.js && node --test special-offer-policy.test.js"
+    "check": "node --check index.js && node --check billing-policy.js && node --check live-common.js && node --check live-activation.js && node --check live-checkout.js && node --check live-webhook.js && node --check live-portal.js && node --check publish-paid-deals.js && node --test billing-policy.test.js && node --check special-offer-policy.js && node --test special-offer-policy.test.js && node --check redemption.js && node --check redemption-policy.js && node --test redemption-policy.test.js && node --check redemption-smoke.mjs"
   },
   "dependencies": {
     "firebase-admin": "^13.0.0",

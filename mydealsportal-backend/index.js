@@ -4,3 +4,4 @@ export { liveCheckout } from "./live-checkout.js";
 export { liveStripeWebhook } from "./live-webhook.js";
 export { liveBillingPortal } from "./live-portal.js";
 export { approvePaidDeal } from "./publish-paid-deals.js";
+export { setRedemptionPin, issueDealClaim, getDealClaimStatus, getBusinessRedemptionSummary, redeemDealClaim } from "./redemption.js";
