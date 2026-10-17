@@ -16,7 +16,6 @@ jobs:
         with:
           workload_identity_provider: projects/423834035461/locations/global/workloadIdentityPools/mydealsportal-github-deploy/providers/mydealsportal-github
           service_account: mydealsportal-github-deploy@mydealsportal.iam.gserviceaccount.com
-          token_format: access_token
       - name: Confirm credentials work without modifying production
         run: |
           test -n "$GOOGLE_GHA_CREDS_PATH"
