@@ -30,9 +30,13 @@ jobs:
           import assert from 'node:assert/strict';
           const rules=fs.readFileSync('../firestore.rules','utf8');
           for(const collection of ['redemptionSecrets','dealClaims','redemptionLimits']){
-            const section=rules.match(new RegExp('match /'+collection+'/\\\\{[^}]+\\\\} \\\\{([\\\\s\\\\S]*?)\\\\}', 'm'));
-            assert.ok(section,'Missing private rule for '+collection);
-            assert.match(section[1],/allow read, write: if false;/,'Unsafe access for '+collection);
+            const marker='match /'+collection+'/{';
+            const start=rules.indexOf(marker);
+            assert.ok(start>=0,'Missing private rule for '+collection);
+            const end=rules.indexOf('}',start+marker.length);
+            assert.ok(end>=0,'Malformed rule for '+collection);
+            const block=rules.slice(start,end);
+            assert.ok(block.includes('allow read, write: if false;'),'Unsafe access for '+collection);
           }
           EOF
       - name: Check browser scripts parse
