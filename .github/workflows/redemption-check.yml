@@ -33,7 +33,7 @@ jobs:
             const marker='match /'+collection+'/{';
             const start=rules.indexOf(marker);
             assert.ok(start>=0,'Missing private rule for '+collection);
-            const end=rules.indexOf('}',start+marker.length);
+            const end=rules.indexOf('}',rules.indexOf('{',start+marker.length)+1);
             assert.ok(end>=0,'Malformed rule for '+collection);
             const block=rules.slice(start,end);
             assert.ok(block.includes('allow read, write: if false;'),'Unsafe access for '+collection);
