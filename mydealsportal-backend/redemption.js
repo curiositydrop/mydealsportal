@@ -59,6 +59,8 @@ export const issueDealClaim=onRequest({region:"us-central1"},async(req,res)=>{
     if(typeof dealId!=="string"||!/^[a-zA-Z0-9]{10,80}$/.test(dealId))return sendError(res,400,"Invalid deal");
     const dealSnap=await db.collection("deals").doc(dealId).get();
     if(!eligibleDeal(dealSnap.data()))return sendError(res,404,"Deal unavailable");
+    const businessSnap=await db.collection("businesses").doc(dealSnap.data().businessId).get();
+    if(!businessSnap.exists||!["active","trialing"].includes(businessSnap.data().subscriptionStatus)||businessSnap.data().status!=="active")return sendError(res,404,"Deal unavailable");
     const code="MDP-"+randomBytes(12).toString("hex").toUpperCase();
     await db.collection("dealClaims").doc(claimKey(code)).create({
       dealId,businessId:dealSnap.data().businessId,status:"claimed",
@@ -76,11 +78,12 @@ export const redeemDealClaim=onRequest({region:"us-central1"},async(req,res)=>{
     const claimRef=db.collection("dealClaims").doc(claimKey(code));
     const claimSnap=await claimRef.get(),claim=claimSnap.data();
     if(!claim||claim.status!=="claimed")return sendError(res,400,"Code invalid or already redeemed");
-    const [dealSnap,secretSnap]=await Promise.all([
+    const [dealSnap,secretSnap,businessSnap]=await Promise.all([
       db.collection("deals").doc(claim.dealId).get(),
-      db.collection("redemptionSecrets").doc(claim.businessId).get()
+      db.collection("redemptionSecrets").doc(claim.businessId).get(),
+      db.collection("businesses").doc(claim.businessId).get()
     ]);
-    if(!eligibleDeal(dealSnap.data())||dealSnap.data().businessId!==claim.businessId||
+    if(!eligibleDeal(dealSnap.data())||dealSnap.data().businessId!==claim.businessId||!businessSnap.exists||businessSnap.data().status!=="active"||
        !verifyPin(pin,secretSnap.data()?.hash))return sendError(res,400,"Code or PIN incorrect");
     const success=await db.runTransaction(async tx=>{
       const current=await tx.get(claimRef);
