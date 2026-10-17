@@ -33,6 +33,17 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Server-only redemption records. Admin SDK bypasses these client rules.
+    match /redemptionSecrets/{businessId} {
+      allow read, write: if false;
+    }
+    match /dealClaims/{claimId} {
+      allow read, write: if false;
+    }
+    match /redemptionLimits/{limitId} {
+      allow read, write: if false;
+    }
+
     match /deals/{dealId} {
       allow read: if (resource.data.active == true && resource.data.publishingApproved == true)
                   || (signedIn() && resource.data.ownerUid == request.auth.uid);
