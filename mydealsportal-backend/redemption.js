@@ -71,6 +71,21 @@ export const issueDealClaim=onRequest({region:"us-central1"},async(req,res)=>{
     return res.json({code});
   }catch(e){console.error("Claim issue",e);return sendError(res,500,"Could not claim deal");}
 });
+export const getBusinessRedemptionSummary=onRequest({region:"us-central1"},async(req,res)=>{
+  if(!route(req,res))return;
+  try{
+    const user=await signedIn(req);
+    const business=await db.collection("businesses").doc(user.uid).get();
+    if(!business.exists||business.data().ownerUid!==user.uid)return sendError(res,403,"Business required");
+    const snapshot=await db.collection("dealClaims").where("businessId","==",user.uid).limit(1000).get();
+    let claimed=0,redeemed=0;
+    for(const item of snapshot.docs){
+      if(item.data().status==="claimed")claimed++;
+      if(item.data().status==="redeemed")redeemed++;
+    }
+    return res.json({claimed,redeemed,limited:snapshot.size===1000});
+  }catch(e){console.error("Redemption summary",e);return sendError(res,500,"Could not load redemption summary");}
+});
 export const getDealClaimStatus=onRequest({region:"us-central1"},async(req,res)=>{
   if(!route(req,res))return;
   try{
