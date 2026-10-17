@@ -1,0 +1,23 @@
+name: Verify GitHub Google Cloud authentication (no deployment)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify-auth:
+    if: github.ref == 'refs/heads/main' && github.repository == 'curiositydrop/mydealsportal'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate with keyless Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/423834035461/locations/global/workloadIdentityPools/mydealsportal-github-deploy/providers/mydealsportal-github
+          service_account: mydealsportal-github-deploy@mydealsportal.iam.gserviceaccount.com
+          token_format: access_token
+      - name: Confirm credentials work without modifying production
+        run: |
+          test -n "$GOOGLE_GHA_CREDS_PATH"
+          echo "GitHub to Google Cloud authentication succeeded; no deployment performed."
