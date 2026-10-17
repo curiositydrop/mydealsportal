@@ -40,8 +40,14 @@ export const setRedemptionPin=onRequest({region:"us-central1"},async(req,res)=>{
     const snap=await ref.get();
     if(!snap.exists||snap.data().ownerUid!==user.uid)return sendError(res,403,"Business required");
     if(snap.data().redemptionPinSet)return sendError(res,409,"PIN already set; contact support to reset it");
-    await db.collection("redemptionSecrets").doc(user.uid).create({hash:hashPin(pin),createdAt:FieldValue.serverTimestamp()});
-    await ref.update({redemptionPinSet:true});
+    const secretRef=db.collection("redemptionSecrets").doc(user.uid);
+    const digest=hashPin(pin);
+    await db.runTransaction(async tx=>{
+      const [business,secret]=await Promise.all([tx.get(ref),tx.get(secretRef)]);
+      if(!business.exists||business.data().ownerUid!==user.uid||business.data().redemptionPinSet||secret.exists)throw Error("PIN already configured");
+      tx.create(secretRef,{hash:digest,createdAt:FieldValue.serverTimestamp()});
+      tx.update(ref,{redemptionPinSet:true});
+    });
     return res.json({ok:true});
   }catch(e){console.error("PIN setup",e);return sendError(res,500,"Could not save PIN");}
 });
