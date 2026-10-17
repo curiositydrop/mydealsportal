@@ -6,6 +6,8 @@ on:
       - 'deal.html'
       - 'dashboard.html'
       - 'advertise.html'
+      - 'firestore.rules'
+      - 'firebase.json'
       - '.github/workflows/redemption-check.yml'
   workflow_dispatch:
 jobs:
@@ -21,6 +23,18 @@ jobs:
           node-version: '22'
       - run: npm install --ignore-scripts --no-audit --no-fund
       - run: npm run check
+      - name: Verify private redemption collections are denied to clients
+        run: |
+          node --input-type=module <<'EOF'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const rules=fs.readFileSync('../firestore.rules','utf8');
+          for(const collection of ['redemptionSecrets','dealClaims','redemptionLimits']){
+            const section=rules.match(new RegExp('match /'+collection+'/\\\\{[^}]+\\\\} \\\\{([\\\\s\\\\S]*?)\\\\}', 'm'));
+            assert.ok(section,'Missing private rule for '+collection);
+            assert.match(section[1],/allow read, write: if false;/,'Unsafe access for '+collection);
+          }
+          EOF
       - name: Check browser scripts parse
         run: |
           node --input-type=module <<'EOF'
