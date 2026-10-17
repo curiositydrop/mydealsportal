@@ -61,6 +61,21 @@ if(!d){
       claimBox.style.display="block";claimBox.textContent=e.message;
     }
   });
-  if(!d.sample)renderClaim();
+  if(!d.sample){
+    renderClaim();
+    const saved=localStorage.getItem(key);
+    if(saved){
+      try{
+        const data=JSON.parse(saved);
+        if(/^MDP-[A-F0-9]{24}$/.test(data.code||"")){
+          const state=await callRedemption("getDealClaimStatus",{code:data.code});
+          if(state.status==="redeemed"){
+            claimBtn.textContent="Redeemed";claimBtn.disabled=true;
+            claimBox.style.display="block";claimBox.innerHTML="<h3>Deal Redeemed</h3><p>This offer has already been redeemed.</p>";
+          }
+        }
+      }catch(e){console.warn("Could not refresh claim status",e)}
+    }
+  }
 }
 </script></body></html>
