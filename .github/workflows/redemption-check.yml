@@ -1,0 +1,55 @@
+name: Redemption safety checks
+on:
+  pull_request:
+    paths:
+      - 'mydealsportal-backend/**'
+      - 'deal.html'
+      - 'dashboard.html'
+      - 'advertise.html'
+      - 'firestore.rules'
+      - 'firebase.json'
+      - '.github/workflows/redemption-check.yml'
+  workflow_dispatch:
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mydealsportal-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: npm run check
+      - name: Verify private redemption collections are denied to clients
+        run: |
+          node --input-type=module <<'EOF'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const rules=fs.readFileSync('../firestore.rules','utf8');
+          for(const collection of ['redemptionSecrets','dealClaims','redemptionLimits']){
+            const marker='match /'+collection+'/{';
+            const start=rules.indexOf(marker);
+            assert.ok(start>=0,'Missing private rule for '+collection);
+            const end=rules.indexOf('}',rules.indexOf('{',start+marker.length)+1);
+            assert.ok(end>=0,'Malformed rule for '+collection);
+            const block=rules.slice(start,end);
+            assert.ok(block.includes('allow read, write: if false;'),'Unsafe access for '+collection);
+          }
+          EOF
+      - name: Check browser scripts parse
+        run: |
+          node --input-type=module <<'EOF'
+          import fs from 'node:fs';
+          import vm from 'node:vm';
+          for(const file of ['../deal.html','../dashboard.html','../advertise.html']){
+            const html=fs.readFileSync(file,'utf8');
+            const scripts=[...html.matchAll(/<script type="module">([\s\S]*?)<\/script>/g)];
+            if(!scripts.length)throw Error('Missing module script: '+file);
+            for(const script of scripts)new vm.SourceTextModule(script[1]);
+          }
+          EOF
+        env:
+          NODE_OPTIONS: --experimental-vm-modules
