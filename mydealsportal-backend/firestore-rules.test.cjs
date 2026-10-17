@@ -24,5 +24,17 @@ const path=require('node:path');
    }
    await assertSucceeds(env.unauthenticatedContext().firestore().doc('deals/deal123456').get());
    console.log('Public approved deal remains readable');
+   const owner=env.authenticatedContext('owner1').firestore();
+   const outsider=env.authenticatedContext('other1').firestore();
+   const guest=env.unauthenticatedContext().firestore();
+   await assertFails(guest.doc('businesses/owner1').update({subscriptionStatus:'active'}));
+   await assertFails(owner.doc('businesses/owner1').update({subscriptionStatus:'trialing'}));
+   await assertFails(owner.doc('businesses/owner1').update({redemptionPinSet:true}));
+   await assertFails(outsider.doc('businesses/owner1').update({status:'active'}));
+   await assertFails(owner.doc('deals/deal123456').update({publishingApproved:false}));
+   await assertFails(outsider.doc('deals/deal123456').update({active:false}));
+   await assertSucceeds(owner.doc('deals/deal123456').update({active:false}));
+   await assertFails(guest.doc('deals/deal123456').get());
+   console.log('Billing status, PIN activation and publishing approval are server-only');
  } finally {await env.cleanup();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
