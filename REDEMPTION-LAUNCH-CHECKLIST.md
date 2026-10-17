@@ -1,9 +1,9 @@
 # Secure redemption launch checklist
 
-This feature is currently on `feature/secure-deal-redemption` (draft PR #6). **Do not deploy before integration checks pass.**
+This feature is currently on `feature/secure-deal-redemption` (draft PR #6). **Automated emulator integration checks have passed. Production deployment and live verification remain outstanding.**
 
 ## Preconditions
-- [ ] Both GitHub Actions suites pass on the final commit.
+- [x] Backend, redemption policy, Firestore rules emulator, and full claim-to-redemption emulator checks passed on commit `1654c7d` (re-run checks after subsequent changes).
 - [ ] Confirm Firebase CLI is authenticated to the intended project: `firebase use` and `firebase projects:list`. The expected project ID is `mydealsportal`.
 - [ ] Confirm Firestore rules deny browser access to `redemptionSecrets`, `dealClaims`, and `redemptionLimits`.
 - [ ] Confirm all existing Stripe endpoints and business publishing flows are unchanged.
@@ -27,7 +27,7 @@ This feature is currently on `feature/secure-deal-redemption` (draft PR #6). **D
 - Do not revert Stripe configuration or billing webhooks as part of redemption rollback.
 
 ## Outstanding risks
-- Full Firebase integration testing has not been run yet.
-- The current business-wide PIN attempt limit may inconvenience legitimate merchants during heavy redemption traffic; observe before broad rollout.
+- Firebase emulator integration testing passed. Live production smoke testing has not been run yet.
+- Business-wide PIN attempt limit removed to prevent merchant-wide lockouts; per-IP and per-claim limits remain. Monitor for abuse after rollout.
 - No PIN reset/recovery workflow is provided. Business owners must contact support to reset a PIN.
 - Redemption summary is capped at 1,000 claim records and is not a lifetime total beyond that limit.
