@@ -46,4 +46,4 @@ jobs:
         env:
           GOOGLE_CLOUD_PROJECT: mydealsportal
         run: |
-          ./mydealsportal-backend/node_modules/.bin/firebase deploy --project mydealsportal --non-interactive --only firestore:rules,functions:mydealsportal:setRedemptionPin,functions:mydealsportal:issueDealClaim,functions:mydealsportal:getDealClaimStatus,functions:mydealsportal:getBusinessRedemptionSummary,functions:mydealsportal:redeemDealClaim
+          ./mydealsportal-backend/node_modules/.bin/firebase deploy --project mydealsportal --non-interactive --force --only firestore:rules,functions:mydealsportal:setRedemptionPin,functions:mydealsportal:issueDealClaim,functions:mydealsportal:getDealClaimStatus,functions:mydealsportal:getBusinessRedemptionSummary,functions:mydealsportal:redeemDealClaim
