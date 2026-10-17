@@ -37,7 +37,8 @@ pinSave.onclick=async()=>{
   if(!/^[0-9]{6}$/.test(pinInput.value)){pinStatus.textContent="Enter exactly six digits.";return;}
   pinSave.disabled=true;pinStatus.textContent="Saving PIN...";
   try{
-    const token=await auth.currentUser.getIdToken();
+    await auth.currentUser.reload();
+    const token=await auth.currentUser.getIdToken(true);
     const response=await fetch("https://us-central1-mydealsportal.cloudfunctions.net/setRedemptionPin",{
       method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
       body:JSON.stringify({pin:pinInput.value})
