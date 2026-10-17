@@ -19,22 +19,47 @@ if(!d){
   content.innerHTML='<div class="detail"><div class="panel"><div class="card-badges"><span class="pill">'+esc(d.category)+'</span>'+(d.sample?'<span class="sample-badge">SAMPLE AD</span>':'')+'</div><h1 class="bigdeal">'+esc(d.title)+'</h1><div class="business">'+esc(d.business)+'</div><div class="meta">'+esc(d.city)+' · '+esc(d.zip)+'</div><div class="price">'+esc(d.price)+'</div><p style="font-size:1.08rem;line-height:1.65">'+esc(d.description)+'</p><div class="note"><b>Terms:</b> '+esc(d.terms)+'</div><div class="actions">'+(d.sample?'<div class="note"><b>Sample ad only.</b> This is an example, not a real redeemable offer.</div>':'<button class="btn btn-primary" id="claimDealBtn">Claim This Deal</button>')+''+(b&&b.website?'<a class="btn btn-soft" href="'+esc(b.website)+'" target="_blank" rel="sponsored noopener">Visit Business</a>':'<a class="btn btn-soft" href="'+businessUrl+'">View Business</a>')+'<a class="btn btn-ghost" href="'+businessUrl+'">More from this business</a><a class="btn btn-ghost" href="'+MDP_BASE+'contact.html?reason=report&deal='+encodeURIComponent(d.title)+'">Report Deal</a></div><div id="claimBox" class="claim-box" style="display:none"></div></div><aside class="panel"><h3>Business</h3><p><b>'+esc(d.business)+'</b></p><p class="tiny">'+esc(d.city)+' · '+esc(d.zip)+'</p><a class="btn btn-soft" href="'+businessUrl+'">View business profile</a></aside></div>';
   const claimBtn=document.getElementById("claimDealBtn");
   const claimBox=document.getElementById("claimBox");
-  const key="mdp_claim_"+d.id;
+  const key="mdp_claim_v2_"+d.id;
+  const endpoint="https://us-central1-mydealsportal.cloudfunctions.net/";
+  async function callRedemption(action,payload){
+    const response=await fetch(endpoint+action,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw Error(data.error||"Please try again");
+    return data;
+  }
   function renderClaim(){
     const saved=localStorage.getItem(key);
     if(!saved)return;
-    const data=JSON.parse(saved);
+    let data;
+    try{data=JSON.parse(saved)}catch{return}
+    if(!/^MDP-[A-F0-9]{24}$/.test(data.code||""))return;
     claimBtn.textContent="Deal Claimed";
     claimBtn.disabled=true;
     claimBox.style.display="block";
-    claimBox.innerHTML='<div class="claim-label">YOUR CLAIM CODE</div><div class="claim-code">'+esc(data.code)+'</div><div class="tiny">Claimed '+esc(data.when)+'</div><p>Show this screen to the business when redeeming the offer.</p>';
+    claimBox.innerHTML='<div class="claim-label">YOUR CLAIM CODE</div><div class="claim-code">'+esc(data.code)+'</div><div class="tiny">Claimed '+esc(data.when)+'</div><p>Show this screen to the business when redeeming the offer.</p><label class="label" for="redeemPin">Business redemption PIN</label><input id="redeemPin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Business enters six digits"><div class="actions"><button class="btn btn-primary" id="redeemBtn">Redeem Deal</button></div><p class="tiny" id="redeemMessage"></p>';
+    document.getElementById("redeemBtn").onclick=async()=>{
+      const btn=document.getElementById("redeemBtn"),msg=document.getElementById("redeemMessage"),pin=document.getElementById("redeemPin").value;
+      if(!/^[0-9]{6}$/.test(pin)){msg.textContent="Enter the six-digit business PIN.";return}
+      btn.disabled=true;msg.textContent="Verifying...";
+      try{
+        await callRedemption("redeemDealClaim",{code:data.code,pin});
+        localStorage.removeItem(key);
+        claimBox.innerHTML='<h3>Deal Redeemed</h3><p>This offer has been redeemed successfully.</p>';
+        claimBtn.textContent="Redeemed";
+      }catch(e){msg.textContent=e.message;btn.disabled=false;document.getElementById("redeemPin").value=""}
+    };
   }
-  if(!d.sample)claimBtn.addEventListener("click",()=>{
-    if(!localStorage.getItem(key)){
-      const code="MDP-"+Math.random().toString(36).slice(2,8).toUpperCase();
-      localStorage.setItem(key,JSON.stringify({code,when:new Date().toLocaleString()}));
+  if(!d.sample)claimBtn.addEventListener("click",async()=>{
+    claimBtn.disabled=true;
+    claimBtn.textContent="Claiming...";
+    try{
+      const result=await callRedemption("issueDealClaim",{dealId:d.id});
+      localStorage.setItem(key,JSON.stringify({code:result.code,when:new Date().toLocaleString()}));
+      renderClaim();
+    }catch(e){
+      claimBtn.disabled=false;claimBtn.textContent="Claim This Deal";
+      claimBox.style.display="block";claimBox.textContent=e.message;
     }
-    renderClaim();
   });
   if(!d.sample)renderClaim();
 }
