@@ -22,7 +22,6 @@ jobs:
       - run: npm install --no-save --ignore-scripts --no-audit --no-fund firebase-tools @firebase/rules-unit-testing firebase
         working-directory: mydealsportal-backend
       - name: Run Firestore rules tests against local emulator
-        run: npx firebase emulators:exec --only firestore --project demo-mydealsportal "node firestore-rules.test.cjs"
-        working-directory: mydealsportal-backend
+        run: npx firebase emulators:exec --only firestore --project demo-mydealsportal "node mydealsportal-backend/firestore-rules.test.cjs"
         env:
           CI: 'true'
