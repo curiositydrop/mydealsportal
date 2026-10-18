@@ -14,7 +14,7 @@ The site checkout must be a **disposable copy**, never a working production chec
 
 ## Firebase validation (not yet performed)
 
-Use Node 22 with `firebase-admin` installed, Application Default Credentials scoped to a **read-only Firestore IAM identity**, and a new empty export directory. Example:
+Use Node 22 and install backend dependencies with `npm ci --prefix mydealsportal-backend` (the exporter resolves `firebase-admin` from that existing backend package), Application Default Credentials scoped to a **read-only Firestore IAM identity**, and a new empty export directory. Example:
 
 ```sh
 node seo/export-firestore.mjs /tmp/mdp-seo-firebase-export
