@@ -24,7 +24,7 @@ const countOnly=process.env.SEO_COUNT_ONLY==='1';
 const [bs,ds]=await Promise.all([db.collection('businesses').where('status','==','active').get(),db.collection('deals').where('active','==',true).where('publishingApproved','==',true).get()]);
 // Strict field allowlist prevents exporting owner email, billing or redemption data.
 const businesses=bs.docs.map(s=>({id:s.id,name:s.get('name'),city:s.get('city'),zip:s.get('zip'),status:s.get('status'),subscriptionStatus:s.get('subscriptionStatus')}));
-const deals=ds.docs.map(s=>({id:s.id,title:s.get('title'),description:s.get('description'),city:s.get('city'),businessId:s.get('businessId'),active:s.get('active'),publishingApproved:s.get('publishingApproved'),expiresAt:s.get('expiresAt')}));
+const deals=ds.docs.map(s=>({id:s.id,title:s.get('title'),description:s.get('description'),city:s.get('city'),businessId:s.get('ownerUid'),active:s.get('active'),publishingApproved:s.get('publishingApproved'),expiresAt:s.get('expiresAt')}));
 const pages=generatePublicPages(businesses,deals);
 if(countOnly){
  console.log('Read-only SEO validation:',businesses.length,'candidate businesses,',deals.length,'candidate deals,',pages.size,'generated files (not written).');
