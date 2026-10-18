@@ -10,7 +10,7 @@ node seo/preview.mjs path/to/fixture.json /tmp/mdp-seo-generated
 node seo/stage.mjs /tmp/mdp-seo-generated /tmp/mdp-site-checkout-copy
 ```
 
-The site checkout must be a **disposable copy**, never a working production checkout. Staging replaces `listings/` and `sitemap.xml` inside that copy and removes stale generated listings. The script rejects incomplete exports, symlinks, unexpected files, and unexpected existing listing content. Existing homepage and application pages are left untouched.
+The site checkout must be a **disposable copy**, never a working production checkout. Staging refuses a zero-listing export by default; `--allow-empty` is an explicit override for deliberate full removal only. Staging replaces `listings/` and `sitemap.xml` inside that copy and removes stale generated listings. The script rejects incomplete exports, symlinks, unexpected files, and unexpected existing listing content. Existing homepage and application pages are left untouched.
 
 ## Firebase validation (not yet performed)
 
