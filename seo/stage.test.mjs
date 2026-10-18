@@ -19,7 +19,7 @@ test('staging replaces stale listings and sitemap',async()=>{
   assert.equal(result.status,0,result.stderr);
   assert.equal(await fs.readFile(path.join(dst,'listings','deals','new.html'),'utf8'),'new');
   await assert.rejects(fs.stat(path.join(dst,'listings','deals','old.html')));
-  assert.equal(await fs.readFile(path.join(dst,'sitemap.xml'),'utf8'),'<urlset>new</urlset>');
+  assert.equal(await fs.readFile(path.join(dst,'sitemap.xml'),'utf8'),'<?xml version="1.0"?><urlset>new</urlset>');
  }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
 test('rejects nested source and destination',async()=>{
