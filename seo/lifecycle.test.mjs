@@ -15,8 +15,8 @@ async function writeGenerated(dir,businesses,deals){
     await fs.writeFile(file,html,'utf8');
   }
 }
-function stage(generated,site){
-  const result=spawnSync(process.execPath,['seo/stage.mjs',generated,site],{encoding:'utf8'});
+function stage(generated,site,allowEmpty=false){
+  const result=spawnSync(process.execPath,['seo/stage.mjs',generated,site,...(allowEmpty?['--allow-empty']:[])],{encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
 }
 test('approved listing appears and canceled listing disappears from pages and sitemap',async()=>{
@@ -34,7 +34,7 @@ test('approved listing appears and canceled listing disappears from pages and si
   assert.match(await fs.readFile(path.join(site,'sitemap.xml'),'utf8'),/deals\/deal123/);
   const second=path.join(tmp,'second');
   await writeGenerated(second,[{...business,subscriptionStatus:'canceled'}],[deal]);
-  stage(second,site);
+  stage(second,site,true);
   await assert.rejects(fs.stat(path.join(site,'listings/deals/deal123/index.html')));
   await assert.rejects(fs.stat(path.join(site,'listings/businesses/shop123/index.html')));
   assert.doesNotMatch(await fs.readFile(path.join(site,'sitemap.xml'),'utf8'),/deal123|shop123/);
