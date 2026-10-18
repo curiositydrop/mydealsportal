@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generatePublicPages} from './render.mjs';
 test('only approved public businesses and deals are exported',()=>{
- const b=[{id:'b1',name:'Bakery',status:'active',publishingApproved:true},{id:'b2',name:'Draft',status:'draft',publishingApproved:true}];
+ const b=[{id:'b1',name:'Bakery',status:'active',subscriptionStatus:'trialing'},{id:'b2',name:'Draft',status:'draft',subscriptionStatus:'active'}];
  const d=[{id:'d1',businessId:'b1',title:'Bread',active:true,publishingApproved:true},{id:'d2',businessId:'b2',title:'Hidden',active:true,publishingApproved:true},{id:'d3',businessId:'b1',title:'Unapproved',active:true,publishingApproved:false}];
  const out=generatePublicPages(b,d);
  assert.ok(out.has('listings/deals/d1/index.html'));
@@ -11,9 +11,18 @@ test('only approved public businesses and deals are exported',()=>{
  assert.ok(!out.get('sitemap.xml').includes('d2'));
 });
 test('escapes malicious listing text and validates ids',()=>{
- const out=generatePublicPages([{id:'safe',name:'<script>alert(1)</script>',status:'active',publishingApproved:true}],[{id:'../bad',title:'Bad',businessId:'safe',active:true,publishingApproved:true}]);
+ const out=generatePublicPages([{id:'safe',name:'<script>alert(1)</script>',status:'active',subscriptionStatus:'active'}],[{id:'../bad',title:'Bad',businessId:'safe',active:true,publishingApproved:true}]);
  const html=out.get('listings/businesses/safe/index.html');
  assert.ok(html.includes('&lt;script&gt;'));
  assert.ok(!html.includes('<script>'));
  assert.ok(!out.has('listings/deals/../bad/index.html'));
+});
+
+test('inactive subscriptions and expired deals are excluded',()=>{
+ const businesses=[{id:'active',name:'Shop',status:'active',subscriptionStatus:'active'},{id:'canceled',name:'Old Shop',status:'active',subscriptionStatus:'canceled'}];
+ const deals=[{id:'expired',businessId:'active',title:'Old sale',active:true,publishingApproved:true,expiresAt:'2020-01-01'},{id:'current',businessId:'active',title:'New sale',active:true,publishingApproved:true},{id:'canceled-deal',businessId:'canceled',title:'Bad',active:true,publishingApproved:true}];
+ const pages=generatePublicPages(businesses,deals);
+ assert.ok(pages.has('listings/deals/current/index.html'));
+ assert.ok(!pages.has('listings/deals/expired/index.html'));
+ assert.ok(!pages.has('listings/deals/canceled-deal/index.html'));
 });
