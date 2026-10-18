@@ -19,11 +19,17 @@ if(!process.env.GOOGLE_CLOUD_PROJECT)throw Error('Set GOOGLE_CLOUD_PROJECT expli
 if((await fs.readdir(target).catch(e=>e.code==='ENOENT'?[]:Promise.reject(e))).length)throw Error('Output directory must be empty to avoid stale pages');
 if(!getApps().length)initializeApp({credential:applicationDefault(),projectId:process.env.GOOGLE_CLOUD_PROJECT});
 const db=getFirestore();
+// Explicit validation-only mode: count candidate records without writing any files.
+const countOnly=process.env.SEO_COUNT_ONLY==='1';
 const [bs,ds]=await Promise.all([db.collection('businesses').where('status','==','active').get(),db.collection('deals').where('active','==',true).where('publishingApproved','==',true).get()]);
 // Strict field allowlist prevents exporting owner email, billing or redemption data.
 const businesses=bs.docs.map(s=>({id:s.id,name:s.get('name'),city:s.get('city'),zip:s.get('zip'),status:s.get('status'),subscriptionStatus:s.get('subscriptionStatus')}));
 const deals=ds.docs.map(s=>({id:s.id,title:s.get('title'),description:s.get('description'),city:s.get('city'),businessId:s.get('businessId'),active:s.get('active'),publishingApproved:s.get('publishingApproved'),expiresAt:s.get('expiresAt')}));
 const pages=generatePublicPages(businesses,deals);
+if(countOnly){
+ console.log('Read-only SEO validation:',businesses.length,'candidate businesses,',deals.length,'candidate deals,',pages.size,'generated files (not written).');
+ process.exit(0);
+}
 await fs.mkdir(target,{recursive:true});
 for(const kind of ['businesses','deals'])await fs.mkdir(path.join(target,'listings',kind),{recursive:true});
 for(const [relative,html] of pages){
