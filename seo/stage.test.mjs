@@ -99,3 +99,16 @@ test('refuses to overwrite unexpected existing listing content',async()=>{
   assert.equal(await fs.readFile(path.join(dst,'listings','custom','keep.html'),'utf8'),'custom content');
  }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
+
+test('refuses to erase extra files within an existing listing',async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'mdp-seo-'));
+ try{
+  const src=path.join(dir,'generated'),dst=path.join(dir,'site');
+  for(const kind of ['deals','businesses'])await fs.mkdir(path.join(src,'listings',kind),{recursive:true});
+  await fs.mkdir(path.join(dst,'listings','deals','shop123'),{recursive:true});
+  await fs.writeFile(path.join(src,'sitemap.xml'),'<?xml version="1.0"?><urlset></urlset>');
+  await fs.writeFile(path.join(dst,'listings','deals','shop123','notes.txt'),'important');
+  assert.notEqual(run(src,dst).status,0);
+  assert.equal(await fs.readFile(path.join(dst,'listings','deals','shop123','notes.txt'),'utf8'),'important');
+ }finally{await fs.rm(dir,{recursive:true,force:true});}
+});
