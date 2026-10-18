@@ -9,6 +9,7 @@ if(!Array.isArray(source.businesses)||!Array.isArray(source.deals))throw Error('
 const destination=path.resolve(output);
 if(destination===process.cwd()||destination===path.parse(destination).root)throw Error('Choose a dedicated output directory');
 await fs.mkdir(destination,{recursive:true});
+for(const kind of ['businesses','deals'])await fs.mkdir(path.join(destination,'listings',kind),{recursive:true});
 for(const [relative,html] of generatePublicPages(source.businesses,source.deals)){
  const file=path.resolve(destination,relative);
  if(!file.startsWith(destination+path.sep))throw Error('Unsafe generated path');
