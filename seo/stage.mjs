@@ -30,6 +30,22 @@ if(!(await fs.stat(target)).isDirectory())throw Error('Site checkout must exist'
 if(await fs.lstat(root).then(s=>s.isDirectory()).catch(()=>false)){
  const existing=await fs.readdir(root);
  if(existing.some(name=>!expectedKinds.includes(name)))throw Error('Unrecognized existing listings content; refusing replacement');
+ for(const kind of existing){
+  const kindPath=path.join(root,kind);
+  const kindStat=await fs.lstat(kindPath);
+  if(!kindStat.isDirectory()||kindStat.isSymbolicLink())throw Error('Unexpected existing listing category');
+  for(const id of await fs.readdir(kindPath)){
+   if(!/^[A-Za-z0-9_-]{1,128}$/.test(id))throw Error('Unexpected existing listing ID');
+   const idPath=path.join(kindPath,id),idStat=await fs.lstat(idPath);
+   if(!idStat.isDirectory()||idStat.isSymbolicLink())throw Error('Unexpected existing listing entry');
+   const names=await fs.readdir(idPath);
+   if(names.some(n=>n!=='index.html'))throw Error('Unexpected existing listing file');
+   if(names.includes('index.html')){
+    const htmlStat=await fs.lstat(path.join(idPath,'index.html'));
+    if(!htmlStat.isFile()||htmlStat.isSymbolicLink())throw Error('Unexpected existing listing HTML');
+   }
+  }
+ }
 }
 const stage=path.join(target,'.seo-staging-'+process.pid);
 await fs.mkdir(stage,{recursive:true});
