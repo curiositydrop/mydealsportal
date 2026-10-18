@@ -2,7 +2,9 @@
 // Deliberately does NOT deploy or modify production automatically.
 import fs from 'node:fs/promises';
 import path from 'node:path';
-const [generated,site]=process.argv.slice(2);
+const [generated,site,...flags]=process.argv.slice(2);
+const allowEmpty=flags.includes('--allow-empty');
+if(flags.some(f=>f!=='--allow-empty'))throw Error('Unknown staging option');
 if(!generated||!site)throw Error('Usage: node seo/stage.mjs <generated-dir> <site-copy-dir>');
 const source=path.resolve(generated),target=path.resolve(site);
 if(source===target||target===process.cwd()||target===path.parse(target).root||source.startsWith(target+path.sep)||target.startsWith(source+path.sep))throw Error('Unsafe destination');
@@ -22,6 +24,12 @@ for(const kind of expectedKinds){
  const s=await fs.lstat(path.join(source,'listings',kind)).catch(()=>null);
  if(!s?.isDirectory()||s.isSymbolicLink())throw Error('Incomplete export: '+kind);
 }
+let generatedCount=0;
+for(const kind of expectedKinds){
+ const entries=await fs.readdir(path.join(source,'listings',kind));
+ generatedCount+=entries.length;
+}
+if(generatedCount===0&&!allowEmpty)throw Error('Empty SEO export: refusing to remove all published listings without --allow-empty');
 const sitemapStat=await fs.lstat(path.join(source,'sitemap.xml'));
 if(!sitemapStat.isFile()||sitemapStat.isSymbolicLink())throw Error('Invalid sitemap source');
 if(!expected.startsWith('<?xml')||!expected.includes('<urlset')||!expected.includes('</urlset>'))throw Error('Missing valid sitemap');
