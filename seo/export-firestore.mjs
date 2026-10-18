@@ -1,8 +1,11 @@
 // Read-only Firestore export for an isolated local preview.
 // Requires Application Default Credentials with Firestore read permissions.
 // Never commit credential files or generated listings.
-import {getApps,initializeApp,applicationDefault} from 'firebase-admin/app';
-import {getFirestore} from 'firebase-admin/firestore';
+import {createRequire} from 'node:module';
+// Resolve the existing backend dependency, not an undeclared root package.
+const requireBackend=createRequire(new URL('../mydealsportal-backend/package.json',import.meta.url));
+const {getApps,initializeApp,applicationDefault}=requireBackend('firebase-admin/app');
+const {getFirestore}=requireBackend('firebase-admin/firestore');
 import {generatePublicPages} from './render.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
