@@ -13,5 +13,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --check seo/render.mjs && node --check seo/preview.mjs && node --check seo/export-firestore.mjs
+      - run: node --check seo/render.mjs && node --check seo/preview.mjs && node --check seo/export-firestore.mjs && node --check seo/stage.mjs
       - run: node --test seo/render.test.mjs
