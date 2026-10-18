@@ -14,4 +14,4 @@ jobs:
         with:
           node-version: '22'
       - run: node --check seo/render.mjs && node --check seo/preview.mjs && node --check seo/export-firestore.mjs && node --check seo/stage.mjs
-      - run: node --test seo/render.test.mjs seo/stage.test.mjs
+      - run: node --test seo/render.test.mjs seo/stage.test.mjs seo/lifecycle.test.mjs
