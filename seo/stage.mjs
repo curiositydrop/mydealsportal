@@ -7,8 +7,13 @@ if(!generated||!site)throw Error('Usage: node seo/stage.mjs <generated-dir> <sit
 const source=path.resolve(generated),target=path.resolve(site);
 if(source===target||target===process.cwd()||target===path.parse(target).root||source.startsWith(target+path.sep)||target.startsWith(source+path.sep))throw Error('Unsafe destination');
 const root=path.join(target,'listings');
+// Never follow symlinks in the destination tree.
+for(const p of [target,root,path.join(target,'sitemap.xml')]){
+ const stat=await fs.lstat(p).catch(e=>e.code==='ENOENT'?null:Promise.reject(e));
+ if(stat?.isSymbolicLink())throw Error('Symlink destination forbidden: '+p);
+}
 const expected=await fs.readFile(path.join(source,'sitemap.xml'),'utf8');
-if(!expected.includes('<urlset'))throw Error('Missing valid sitemap');
+if(!expected.startsWith('<?xml')||!expected.includes('<urlset')||!expected.includes('</urlset>'))throw Error('Missing valid sitemap');
 if(!(await fs.stat(target)).isDirectory())throw Error('Site checkout must exist');
 const stage=path.join(target,'.seo-staging-'+process.pid);
 await fs.mkdir(stage,{recursive:true});
