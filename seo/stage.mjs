@@ -26,14 +26,22 @@ const sitemapStat=await fs.lstat(path.join(source,'sitemap.xml'));
 if(!sitemapStat.isFile()||sitemapStat.isSymbolicLink())throw Error('Invalid sitemap source');
 if(!expected.startsWith('<?xml')||!expected.includes('<urlset')||!expected.includes('</urlset>'))throw Error('Missing valid sitemap');
 if(!(await fs.stat(target)).isDirectory())throw Error('Site checkout must exist');
+// Never erase hand-maintained content under listings.
+if(await fs.lstat(root).then(s=>s.isDirectory()).catch(()=>false)){
+ const existing=await fs.readdir(root);
+ if(existing.some(name=>!expectedKinds.includes(name)))throw Error('Unrecognized existing listings content; refusing replacement');
+}
 const stage=path.join(target,'.seo-staging-'+process.pid);
 await fs.mkdir(stage,{recursive:true});
 async function copyTree(src,dst){
  for(const entry of await fs.readdir(src,{withFileTypes:true})){
   const from=path.join(src,entry.name),to=path.join(dst,entry.name);
   if(entry.isSymbolicLink())throw Error('Symlinks are forbidden');
-  if(entry.isDirectory()){await fs.mkdir(to,{recursive:true});await copyTree(from,to);}
-  else if(entry.isFile()&&entry.name.endsWith('.html'))await fs.copyFile(from,to);
+  if(entry.isDirectory()){
+   if(!/^[A-Za-z0-9_-]{1,128}$/.test(entry.name))throw Error('Unexpected listing directory '+from);
+   await fs.mkdir(to,{recursive:true});await copyTree(from,to);
+  }
+  else if(entry.isFile()&&entry.name==='index.html')await fs.copyFile(from,to);
   else throw Error('Unexpected generated file '+from);
  }
 }
