@@ -1,3 +1,17 @@
+/* Google Analytics 4 — shared site-wide tracking */
+(function(){
+  if (document.querySelector('script[data-mdp-ga4]')) return;
+  const tag=document.createElement('script');
+  tag.async=true;
+  tag.src='https://www.googletagmanager.com/gtag/js?id=G-M1Z55WFZ5N';
+  tag.dataset.mdpGa4='true';
+  document.head.appendChild(tag);
+  window.dataLayer=window.dataLayer||[];
+  window.gtag=function(){window.dataLayer.push(arguments);};
+  window.gtag('js',new Date());
+  window.gtag('config','G-M1Z55WFZ5N');
+})();
+
 const MDP_BASE="/";
 const seedDeals=[
 {id:"sample-1",title:"20% Off Dinner for Two",business:"Harbor Table Kitchen",zip:"04101",city:"Portland, Maine",category:"Food & Drink",price:"Save 20%",description:"Enjoy 20% off two dinner entrées during select evening hours.",terms:"Dine-in only. Sample ad for preview purposes.",created:8,active:true,sample:true},
