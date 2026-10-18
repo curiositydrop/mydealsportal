@@ -13,6 +13,17 @@ for(const p of [target,root,path.join(target,'sitemap.xml')]){
  if(stat?.isSymbolicLink())throw Error('Symlink destination forbidden: '+p);
 }
 const expected=await fs.readFile(path.join(source,'sitemap.xml'),'utf8');
+const sourceItems=await fs.readdir(source,{withFileTypes:true});
+if(sourceItems.some(e=>e.isSymbolicLink()||!['listings','sitemap.xml'].includes(e.name)))throw Error('Unexpected export contents');
+const listingStat=await fs.lstat(path.join(source,'listings')).catch(()=>null);
+if(!listingStat?.isDirectory()||listingStat.isSymbolicLink())throw Error('Incomplete listing export');
+const expectedKinds=['businesses','deals'];
+for(const kind of expectedKinds){
+ const s=await fs.lstat(path.join(source,'listings',kind)).catch(()=>null);
+ if(!s?.isDirectory()||s.isSymbolicLink())throw Error('Incomplete export: '+kind);
+}
+const sitemapStat=await fs.lstat(path.join(source,'sitemap.xml'));
+if(!sitemapStat.isFile()||sitemapStat.isSymbolicLink())throw Error('Invalid sitemap source');
 if(!expected.startsWith('<?xml')||!expected.includes('<urlset')||!expected.includes('</urlset>'))throw Error('Missing valid sitemap');
 if(!(await fs.stat(target)).isDirectory())throw Error('Site checkout must exist');
 const stage=path.join(target,'.seo-staging-'+process.pid);
