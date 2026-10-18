@@ -19,6 +19,7 @@ const businesses=bs.docs.map(s=>({id:s.id,name:s.get('name'),city:s.get('city'),
 const deals=ds.docs.map(s=>({id:s.id,title:s.get('title'),description:s.get('description'),city:s.get('city'),businessId:s.get('businessId'),active:s.get('active'),publishingApproved:s.get('publishingApproved'),expiresAt:s.get('expiresAt')}));
 const pages=generatePublicPages(businesses,deals);
 await fs.mkdir(target,{recursive:true});
+for(const kind of ['businesses','deals'])await fs.mkdir(path.join(target,'listings',kind),{recursive:true});
 for(const [relative,html] of pages){
  const file=path.resolve(target,relative);
  if(!file.startsWith(target+path.sep))throw Error('Invalid path');
