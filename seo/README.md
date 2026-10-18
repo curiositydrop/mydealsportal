@@ -17,7 +17,7 @@ The site checkout must be a **disposable copy**, never a working production chec
 Use Node 22 and install backend dependencies with `npm ci --prefix mydealsportal-backend` (the exporter resolves `firebase-admin` from that existing backend package), Application Default Credentials scoped to a **read-only Firestore IAM identity**, and a new empty export directory. Example:
 
 ```sh
-node seo/export-firestore.mjs /tmp/mdp-seo-firebase-export
+GOOGLE_CLOUD_PROJECT=mydealsportal node seo/export-firestore.mjs /tmp/mdp-seo-firebase-export
 ```
 
 Do not commit generated customer data, Firebase credentials, or local exports. Validate generated URLs, content, candidate counts, and that inactive/canceled businesses are absent before staging. Verify with the real Firestore schema and indexes; no production data export has yet been run.
