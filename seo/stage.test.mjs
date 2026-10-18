@@ -45,3 +45,43 @@ test('rejects symlink listing destination without modifying it',async()=>{
   assert.equal(await fs.readFile(path.join(outside,'keep.txt'),'utf8'),'keep');
  }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
+
+test('incomplete export fails without deleting existing listings',async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'mdp-seo-'));
+ try{
+  const src=path.join(dir,'generated'),dst=path.join(dir,'site');
+  await fs.mkdir(path.join(src,'listings','deals'),{recursive:true});
+  await fs.mkdir(path.join(dst,'listings','deals'),{recursive:true});
+  await fs.writeFile(path.join(src,'sitemap.xml'),'<?xml version="1.0"?><urlset></urlset>');
+  await fs.writeFile(path.join(dst,'listings','deals','keep.html'),'keep');
+  await fs.writeFile(path.join(dst,'sitemap.xml'),'old sitemap');
+  assert.notEqual(run(src,dst).status,0);
+  assert.equal(await fs.readFile(path.join(dst,'listings','deals','keep.html'),'utf8'),'keep');
+  assert.equal(await fs.readFile(path.join(dst,'sitemap.xml'),'utf8'),'old sitemap');
+ }finally{await fs.rm(dir,{recursive:true,force:true});}
+});
+test('malformed sitemap fails without deleting existing listings',async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'mdp-seo-'));
+ try{
+  const src=path.join(dir,'generated'),dst=path.join(dir,'site');
+  for(const kind of ['deals','businesses'])await fs.mkdir(path.join(src,'listings',kind),{recursive:true});
+  await fs.mkdir(path.join(dst,'listings','deals'),{recursive:true});
+  await fs.writeFile(path.join(src,'sitemap.xml'),'not an XML sitemap');
+  await fs.writeFile(path.join(dst,'listings','deals','keep.html'),'keep');
+  assert.notEqual(run(src,dst).status,0);
+  assert.equal(await fs.readFile(path.join(dst,'listings','deals','keep.html'),'utf8'),'keep');
+ }finally{await fs.rm(dir,{recursive:true,force:true});}
+});
+test('symlink in generated tree fails before replacing site',async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'mdp-seo-'));
+ try{
+  const src=path.join(dir,'generated'),dst=path.join(dir,'site');
+  for(const kind of ['deals','businesses'])await fs.mkdir(path.join(src,'listings',kind),{recursive:true});
+  await fs.mkdir(path.join(dst,'listings','deals'),{recursive:true});
+  await fs.writeFile(path.join(src,'sitemap.xml'),'<?xml version="1.0"?><urlset></urlset>');
+  await fs.writeFile(path.join(dst,'listings','deals','keep.html'),'keep');
+  await fs.symlink(path.join(dst,'listings','deals','keep.html'),path.join(src,'listings','deals','linked.html'));
+  assert.notEqual(run(src,dst).status,0);
+  assert.equal(await fs.readFile(path.join(dst,'listings','deals','keep.html'),'utf8'),'keep');
+ }finally{await fs.rm(dir,{recursive:true,force:true});}
+});
