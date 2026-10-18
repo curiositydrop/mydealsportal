@@ -26,3 +26,12 @@ test('inactive subscriptions and expired deals are excluded',()=>{
  assert.ok(!pages.has('listings/deals/expired/index.html'));
  assert.ok(!pages.has('listings/deals/canceled-deal/index.html'));
 });
+
+test('Firestore timestamps and invalid expiry are handled conservatively',()=>{
+ const businesses=[{id:'shop',name:'Shop',status:'active',subscriptionStatus:'active'}];
+ const base={businessId:'shop',title:'Offer',active:true,publishingApproved:true};
+ const pages=generatePublicPages(businesses,[{...base,id:'old',expiresAt:{seconds:1}},{...base,id:'unknown',expiresAt:{bad:true}},{...base,id:'fresh',expiresAt:{seconds:4102444800}}]);
+ assert.ok(!pages.has('listings/deals/old/index.html'));
+ assert.ok(!pages.has('listings/deals/unknown/index.html'));
+ assert.ok(pages.has('listings/deals/fresh/index.html'));
+});
