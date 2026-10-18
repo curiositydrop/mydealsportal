@@ -1,11 +1,34 @@
-# Public listing SEO exporter (development only)
+# Public listing SEO pipeline (development only)
 
-The pure renderer (`render.mjs`) accepts only approved public fields. The Firestore exporter (`export-firestore.mjs`) is **read-only** and writes HTML to an empty local output directory. It does not upload, deploy, change Firestore, or access Stripe.
+The renderer (`render.mjs`) generates public business/deal HTML and a sitemap from allowlisted fields. The Firestore exporter (`export-firestore.mjs`) only **reads** approved candidate records and writes to a fresh local directory. It does not deploy, modify Firestore, or touch Stripe.
 
-Run tests with `node --test seo/render.test.mjs`.
+## Offline validation (no credentials)
 
-To export a preview, install `firebase-admin` in an appropriate Node 22 environment, configure Google Application Default Credentials for a **read-only Firestore identity**, then run `node seo/export-firestore.mjs /tmp/mdp-seo-preview`. Do not commit credential files or generated customer data.
+```sh
+node --test seo/*.test.mjs
+node seo/preview.mjs path/to/fixture.json /tmp/mdp-seo-generated
+node seo/stage.mjs /tmp/mdp-seo-generated /tmp/mdp-site-checkout-copy
+```
 
-**Not ready for deployment:** production automation must regenerate to a clean staging directory, validate and atomically replace the published listing tree, remove old pages, preserve the existing homepage and sitemap, and handle stale URL removal. Never append generated pages indefinitely. Google may continue to index removed pages unless URLs return 404/410 or noindex; GitHub Pages removal yields 404.
+The site checkout must be a **disposable copy**, never a working production checkout. Staging replaces `listings/` and `sitemap.xml` inside that copy and removes stale generated listings. The script rejects incomplete exports, symlinks, unexpected files, and unexpected existing listing content. Existing homepage and application pages are left untouched.
 
-The current business/deal templates remain noindex; this exporter creates separate static, indexable pages. It does not modify payment, checkout, claims, or subscriptions.
+## Firebase validation (not yet performed)
+
+Use Node 22 with `firebase-admin` installed, Application Default Credentials scoped to a **read-only Firestore IAM identity**, and a new empty export directory. Example:
+
+```sh
+node seo/export-firestore.mjs /tmp/mdp-seo-firebase-export
+```
+
+Do not commit generated customer data, Firebase credentials, or local exports. Validate generated URLs, content, candidate counts, and that inactive/canceled businesses are absent before staging. Verify with the real Firestore schema and indexes; no production data export has yet been run.
+
+## Release gates
+
+- Confirm GitHub CI green and inspect generated preview pages.
+- Verify read-only Firestore export with actual records and no unexpected private data.
+- Require an explicit review/approval before replacing production listing pages or sitemap.
+- Publish from a clean checkout with a controlled deployment, remove stale pages, and verify 404 responses for removed URLs.
+- Keep private account, login, dashboard, Stripe, redemption, and checkout code unchanged.
+- Confirm Search Console sitemap fetch and monitor indexing after launch.
+
+**This PR is not a production deployment.** Static public listing pages would be indexable; the existing dynamic deal/business templates remain noindex,follow.
