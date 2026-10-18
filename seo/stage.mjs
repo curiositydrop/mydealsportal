@@ -55,8 +55,7 @@ if(await fs.lstat(root).then(s=>s.isDirectory()).catch(()=>false)){
   }
  }
 }
-const stage=path.join(target,'.seo-staging-'+process.pid);
-await fs.mkdir(stage,{recursive:true});
+const stage=await fs.mkdtemp(path.join(target,'.seo-staging-'));
 async function copyTree(src,dst){
  for(const entry of await fs.readdir(src,{withFileTypes:true})){
   const from=path.join(src,entry.name),to=path.join(dst,entry.name);
