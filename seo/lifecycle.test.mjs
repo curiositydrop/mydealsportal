@@ -8,6 +8,7 @@ import {generatePublicPages} from './render.mjs';
 
 async function writeGenerated(dir,businesses,deals){
   await fs.mkdir(dir,{recursive:true});
+  for(const kind of ['businesses','deals'])await fs.mkdir(path.join(dir,'listings',kind),{recursive:true});
   for(const [relative,html] of generatePublicPages(businesses,deals)){
     const file=path.join(dir,relative);
     await fs.mkdir(path.dirname(file),{recursive:true});
