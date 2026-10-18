@@ -14,13 +14,14 @@ test('staging replaces stale listings and sitemap',async()=>{
   await fs.mkdir(path.join(dst,'listings','deals'),{recursive:true});
   await fs.mkdir(path.join(src,'listings','deals','new'),{recursive:true});
   await fs.writeFile(path.join(src,'listings','deals','new','index.html'),'new');
-  await fs.writeFile(path.join(dst,'listings','deals','old.html'),'old');
+  await fs.mkdir(path.join(dst,'listings','deals','old'),{recursive:true});
+  await fs.writeFile(path.join(dst,'listings','deals','old','index.html'),'old');
   await fs.writeFile(path.join(src,'sitemap.xml'),'<?xml version="1.0"?><urlset>new</urlset>');
   await fs.writeFile(path.join(dst,'sitemap.xml'),'<?xml version="1.0"?><urlset>old</urlset>');
   const result=run(src,dst);
   assert.equal(result.status,0,result.stderr);
   assert.equal(await fs.readFile(path.join(dst,'listings','deals','new','index.html'),'utf8'),'new');
-  await assert.rejects(fs.stat(path.join(dst,'listings','deals','old.html')));
+  await assert.rejects(fs.stat(path.join(dst,'listings','deals','old','index.html')));
   assert.equal(await fs.readFile(path.join(dst,'sitemap.xml'),'utf8'),'<?xml version="1.0"?><urlset>new</urlset>');
  }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
