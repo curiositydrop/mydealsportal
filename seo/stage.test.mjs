@@ -10,6 +10,7 @@ test('staging replaces stale listings and sitemap',async()=>{
  try{
   const src=path.join(dir,'generated'),dst=path.join(dir,'site');
   await fs.mkdir(path.join(src,'listings','deals'),{recursive:true});
+  await fs.mkdir(path.join(src,'listings','businesses'),{recursive:true});
   await fs.mkdir(path.join(dst,'listings','deals'),{recursive:true});
   await fs.writeFile(path.join(src,'listings','deals','new.html'),'new');
   await fs.writeFile(path.join(dst,'listings','deals','old.html'),'old');
