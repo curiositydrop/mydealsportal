@@ -12,9 +12,12 @@ import path from 'node:path';
 const dest=process.argv[2];
 if(!dest)throw Error('Usage: node seo/export-firestore.mjs <empty-output-directory>');
 const target=path.resolve(dest);
-if(target===process.cwd()||target===path.parse(target).root)throw Error('Unsafe output directory');
+if(target===process.cwd()||target===path.parse(target).root||process.cwd().startsWith(target+path.sep))throw Error('Unsafe output directory');
+const outputStat=await fs.lstat(target).catch(e=>e.code==='ENOENT'?null:Promise.reject(e));
+if(outputStat?.isSymbolicLink()||(outputStat&&!outputStat.isDirectory()))throw Error('Output must be a real directory');
+if(!process.env.GOOGLE_CLOUD_PROJECT)throw Error('Set GOOGLE_CLOUD_PROJECT explicitly before reading Firestore');
 if((await fs.readdir(target).catch(e=>e.code==='ENOENT'?[]:Promise.reject(e))).length)throw Error('Output directory must be empty to avoid stale pages');
-if(!getApps().length)initializeApp({credential:applicationDefault(),projectId:process.env.GOOGLE_CLOUD_PROJECT||'mydealsportal'});
+if(!getApps().length)initializeApp({credential:applicationDefault(),projectId:process.env.GOOGLE_CLOUD_PROJECT});
 const db=getFirestore();
 const [bs,ds]=await Promise.all([db.collection('businesses').where('status','==','active').get(),db.collection('deals').where('active','==',true).where('publishingApproved','==',true).get()]);
 // Strict field allowlist prevents exporting owner email, billing or redemption data.
