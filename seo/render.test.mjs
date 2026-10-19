@@ -44,3 +44,13 @@ test('active lifetime-free business is public even without a paid subscription',
  assert.ok(!generatePublicPages([{...business,status:'inactive'}],[]).has('listings/businesses/newleaf/index.html'));
  assert.ok(!generatePublicPages([{...business,lifetimeFree:false}],[]).has('listings/businesses/newleaf/index.html'));
 });
+
+test('date-only terms expire at end of date; free text is not guessed',()=>{
+ const b={id:'shop',name:'Shop',status:'active',subscriptionStatus:'active'};
+ const base={businessId:'shop',title:'Offer',active:true,publishingApproved:true};
+ const pages=generatePublicPages([b],[{...base,id:'old-terms',terms:'10/31/2020'},{...base,id:'future-terms',terms:'10/31/2099'},{...base,id:'text-terms',terms:'See store for details'},{...base,id:'invalid-terms',terms:'02/30/2026'}]);
+ assert.ok(!pages.has('listings/deals/old-terms/index.html'));
+ assert.ok(pages.has('listings/deals/future-terms/index.html'));
+ assert.ok(pages.has('listings/deals/text-terms/index.html'));
+ assert.ok(!pages.has('listings/deals/invalid-terms/index.html'));
+});
