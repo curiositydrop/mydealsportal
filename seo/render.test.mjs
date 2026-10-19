@@ -35,3 +35,12 @@ test('Firestore timestamps and invalid expiry are handled conservatively',()=>{
  assert.ok(!pages.has('listings/deals/unknown/index.html'));
  assert.ok(pages.has('listings/deals/fresh/index.html'));
 });
+
+test('active lifetime-free business is public even without a paid subscription',()=>{
+ const business={id:'newleaf',name:'New Leaf Painting',status:'active',lifetimeFree:true};
+ const pages=generatePublicPages([business],[]);
+ assert.ok(pages.has('listings/businesses/newleaf/index.html'));
+ assert.match(pages.get('sitemap.xml'),/businesses\/newleaf/);
+ assert.ok(!generatePublicPages([{...business,status:'inactive'}],[]).has('listings/businesses/newleaf/index.html'));
+ assert.ok(!generatePublicPages([{...business,lifetimeFree:false}],[]).has('listings/businesses/newleaf/index.html'));
+});
