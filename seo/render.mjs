@@ -7,7 +7,7 @@ const publicDeal=d=>Boolean(d&&validId(d.id)&&d.active===true&&d.publishingAppro
 // A terms field is free text. Only interpret it as an expiry when it is exactly MM/DD/YYYY.
 const termsExpiry=terms=>{
  if(typeof terms!=='string')return null;
- const m=/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/.exec(terms.trim());
+ const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(terms.trim());
  if(!m)return null;
  const month=Number(m[1]),day=Number(m[2]),year=Number(m[3]);
  const end=Date.UTC(year,month-1,day,23,59,59,999);
