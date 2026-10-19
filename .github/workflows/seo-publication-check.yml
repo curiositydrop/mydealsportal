@@ -1,0 +1,36 @@
+name: Validate SEO publication workflow
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/seo-publication-pr.yml'
+      - '.github/workflows/seo-publication-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run SEO unit and release tests
+        run: node --test seo/*.test.mjs
+      - name: Verify publication workflow boundaries
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('.github/workflows/seo-publication-pr.yml').read_text()
+          checks={
+            'read-only Firebase identity': 'google-github-actions/auth@v2' in s,
+            'release safety check': 'node seo/release-check.mjs' in s,
+            'PR creation instead of deployment': 'peter-evans/create-pull-request@v7' in s,
+            'restricted generated files': 'add-paths: |\n            listings/**\n            sitemap.xml' in s,
+            'no auto merge': 'merge_pull_request' not in s and 'gh pr merge' not in s,
+            'no direct push to main': 'git push origin main' not in s,
+          }
+          for name,ok in checks.items(): print(('PASS' if ok else 'FAIL'),name)
+          if not all(checks.values()): raise SystemExit(1)
+          PY
