@@ -11,10 +11,17 @@ PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(project
 echo "Preparing read-only SEO identity for $REPO in $PROJECT_ID ($PROJECT_NUMBER)"
 gcloud services enable iam.googleapis.com iamcredentials.googleapis.com sts.googleapis.com --project="$PROJECT_ID"
 if ! gcloud iam workload-identity-pools describe "$POOL" --location=global --project="$PROJECT_ID" >/dev/null 2>&1; then
- gcloud iam workload-identity-pools create "$POOL" --location=global --project="$PROJECT_ID" --display-name="GitHub SEO listings" 
+ gcloud iam workload-identity-pools create "$POOL" --location=global --project="$PROJECT_ID" --display-name="GitHub SEO listings" --project="$PROJECT_ID"
 fi
 if ! gcloud iam workload-identity-pools providers describe "$PROVIDER" --workload-identity-pool="$POOL" --location=global --project="$PROJECT_ID" >/dev/null 2>&1; then
  gcloud iam workload-identity-pools providers create-oidc "$PROVIDER" --project="$PROJECT_ID" --location=global --workload-identity-pool="$POOL" --display-name="GitHub SEO preview" --issuer-uri="https://token.actions.githubusercontent.com" --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref" --attribute-condition="assertion.repository == '$REPO' && assertion.ref == 'refs/heads/main'"
+fi
+# Refuse to grant permissions if an existing provider has unexpected restrictions.
+PROVIDER_CONDITION="$(gcloud iam workload-identity-pools providers describe "$PROVIDER" --workload-identity-pool="$POOL" --location=global --project="$PROJECT_ID" --format='value(attributeCondition)')"
+EXPECTED_CONDITION="assertion.repository == '$REPO' && assertion.ref == 'refs/heads/main'"
+if [[ "$PROVIDER_CONDITION" != "$EXPECTED_CONDITION" ]]; then
+ echo "ERROR: Existing provider has unexpected identity restrictions; review before granting access." >&2
+ exit 1
 fi
 SA_EMAIL="$SA@$PROJECT_ID.iam.gserviceaccount.com"
 if ! gcloud iam service-accounts describe "$SA_EMAIL" --project="$PROJECT_ID" >/dev/null 2>&1; then
