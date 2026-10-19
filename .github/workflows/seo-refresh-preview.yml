@@ -1,0 +1,45 @@
+name: SEO listings refresh preview
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 8 * * *'
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  preview:
+    if: ${{ vars.SEO_WIF_PROVIDER != '' && vars.SEO_SERVICE_ACCOUNT != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test seo/*.test.mjs
+      - name: Authenticate using short-lived read-only identity
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.SEO_WIF_PROVIDER }}
+          service_account: ${{ vars.SEO_SERVICE_ACCOUNT }}
+      - run: npm install --prefix mydealsportal-backend --no-save --package-lock=false --ignore-scripts
+      - name: Export approved public listing pages
+        env:
+          GOOGLE_CLOUD_PROJECT: mydealsportal
+        run: node seo/export-firestore.mjs "${RUNNER_TEMP}/seo-export"
+      - name: Stage in disposable checkout
+        run: |
+          mkdir -p "${RUNNER_TEMP}/site-review"
+          git archive HEAD | tar -x -C "${RUNNER_TEMP}/site-review"
+          node seo/stage.mjs "${RUNNER_TEMP}/seo-export" "${RUNNER_TEMP}/site-review"
+          test -f "${RUNNER_TEMP}/site-review/CNAME"
+          test -f "${RUNNER_TEMP}/site-review/index.html"
+      - name: Verify staged pages and sitemap before review
+        run: node seo/release-check.mjs "${RUNNER_TEMP}/site-review"
+      - name: Upload review artifact (not deployed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-listings-preview
+          path: |
+            ${{ runner.temp }}/site-review/listings/
+            ${{ runner.temp }}/site-review/sitemap.xml
+          retention-days: 3
