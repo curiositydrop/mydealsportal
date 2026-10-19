@@ -24,6 +24,10 @@ GOOGLE_CLOUD_PROJECT=mydealsportal node seo/export-firestore.mjs /tmp/mdp-seo-fi
 
 Do not commit generated customer data, Firebase credentials, or local exports. Validate generated URLs, content, candidate counts, and that inactive/canceled businesses are absent before staging. Verify with the real Firestore schema and indexes; no production data export has yet been run.
 
+## Current hosting and release path
+
+The production repository uses GitHub Pages with `CNAME` set to `www.mydealsportal.com`. The live `robots.txt` points at `/sitemap.xml`. Do not configure Firebase Hosting for this SEO release. Once validated, generated `listings/` and `sitemap.xml` must be staged into a **disposable GitHub Pages checkout**, reviewed, then released through the existing GitHub Pages source with an explicit approval. Keep the `CNAME`, homepage, payment, and application files intact.
+
 ## Release gates
 
 - Confirm GitHub CI green and inspect generated preview pages.
