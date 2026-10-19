@@ -59,5 +59,3 @@ jobs:
             This PR updates only listings/ and sitemap.xml.
             Check active businesses, deals, expiration and privacy before merging.
             No billing, login, or redemption code is changed.
-          labels: |
-            seo
