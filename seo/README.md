@@ -12,9 +12,9 @@ node seo/stage.mjs /tmp/mdp-seo-generated /tmp/mdp-site-checkout-copy
 
 The site checkout must be a **disposable copy**, never a working production checkout. Staging refuses a zero-listing export by default; `--allow-empty` is an explicit override for deliberate full removal only. Staging replaces `listings/` and `sitemap.xml` inside that copy and removes stale generated listings. The script rejects incomplete exports, symlinks, unexpected files, and unexpected existing listing content. Existing homepage and application pages are left untouched.
 
-## Firebase validation (not yet performed)
+## Firebase validation (completed in Cloud Shell on 2026-10-19)
 
-Use Node 22 and install backend dependencies with `npm ci --prefix mydealsportal-backend` (the exporter resolves `firebase-admin` from that existing backend package), Application Default Credentials scoped to a **read-only Firestore IAM identity**, and a new empty export directory. Example:
+Use Node 22 and install backend dependencies with `npm install --prefix mydealsportal-backend --no-save --package-lock=false` (the exporter resolves `firebase-admin` from that existing backend package), Application Default Credentials scoped to a **read-only Firestore IAM identity**, and a new empty export directory. Example:
 
 ```sh
 GOOGLE_CLOUD_PROJECT=mydealsportal SEO_COUNT_ONLY=1 node seo/export-firestore.mjs /tmp/mdp-seo-firebase-export
@@ -22,11 +22,15 @@ GOOGLE_CLOUD_PROJECT=mydealsportal SEO_COUNT_ONLY=1 node seo/export-firestore.mj
 GOOGLE_CLOUD_PROJECT=mydealsportal node seo/export-firestore.mjs /tmp/mdp-seo-firebase-export
 ```
 
-Do not commit generated customer data, Firebase credentials, or local exports. Validate generated URLs, content, candidate counts, and that inactive/canceled businesses are absent before staging. Verify with the real Firestore schema and indexes; no production data export has yet been run.
+Do not commit generated customer data, Firebase credentials, or local exports. Validate generated URLs, content, candidate counts, and that inactive/canceled businesses are absent before staging. The Cloud Shell read-only export returned one business, one deal and three generated files. All 18 tests passed and a disposable staging check preserved the homepage and CNAME. This is a point-in-time verification, not an ongoing production release.
 
 ## Current hosting and release path
 
 The production repository uses GitHub Pages with `CNAME` set to `www.mydealsportal.com`. The live `robots.txt` points at `/sitemap.xml`. Do not configure Firebase Hosting for this SEO release. Once validated, generated `listings/` and `sitemap.xml` must be staged into a **disposable GitHub Pages checkout**, reviewed, then released through the existing GitHub Pages source with an explicit approval. Keep the `CNAME`, homepage, payment, and application files intact.
+
+## Scheduled refresh preview (not production deployment)
+
+`.github/workflows/seo-refresh-preview.yml` is a scheduled **preview-only** workflow. It runs daily once on the default branch after merging, but its job is skipped until repository variables `SEO_WIF_PROVIDER` and `SEO_SERVICE_ACCOUNT` are configured. These must point to a Google Workload Identity Federation provider and a service account restricted to Firestore read access for the `mydealsportal` project. No service-account JSON key or user credentials should be stored in GitHub. The workflow exports, stages, and uploads a short-lived review artifact; it **never commits, pushes, or deploys**. Publication and stale-page removal still require a separately approved release path. Note that expiration is evaluated at export time; scheduled preview generation alone does not remove expired pages from the live website.
 
 ## Release gates
 
