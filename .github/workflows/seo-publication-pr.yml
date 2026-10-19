@@ -1,0 +1,63 @@
+name: Prepare SEO publication pull request
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '47 8 * * *'
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+concurrency:
+  group: seo-publication-pr
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: ${{ vars.SEO_WIF_PROVIDER != '' && vars.SEO_SERVICE_ACCOUNT != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test seo/*.test.mjs
+      - name: Authenticate to Firestore using short-lived identity
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.SEO_WIF_PROVIDER }}
+          service_account: ${{ vars.SEO_SERVICE_ACCOUNT }}
+      - run: npm install --prefix mydealsportal-backend --no-save --package-lock=false --ignore-scripts
+      - name: Generate and stage in isolated directory
+        env:
+          GOOGLE_CLOUD_PROJECT: mydealsportal
+        run: |
+          node seo/export-firestore.mjs "${RUNNER_TEMP}/seo-export"
+          mkdir -p "${RUNNER_TEMP}/site-review"
+          git archive HEAD | tar -x -C "${RUNNER_TEMP}/site-review"
+          node seo/stage.mjs "${RUNNER_TEMP}/seo-export" "${RUNNER_TEMP}/site-review"
+          node seo/release-check.mjs "${RUNNER_TEMP}/site-review"
+      - name: Copy ONLY generated SEO files into working tree
+        run: |
+          rm -rf listings
+          cp -R "${RUNNER_TEMP}/site-review/listings" listings
+          cp "${RUNNER_TEMP}/site-review/sitemap.xml" sitemap.xml
+          git diff --exit-code -- CNAME index.html robots.txt
+      - name: Open or update a reviewable publication PR (never auto-merge)
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          add-paths: |
+            listings/**
+            sitemap.xml
+          commit-message: 'Refresh approved public SEO listings and sitemap'
+          branch: automated/seo-listing-refresh
+          delete-branch: true
+          title: 'Review generated public listing pages'
+          body: |
+            Automatically generated from approved public Firestore fields.
+            This PR updates only listings/ and sitemap.xml.
+            Check active businesses, deals, expiration and privacy before merging.
+            No billing, login, or redemption code is changed.
+          labels: |
+            seo
