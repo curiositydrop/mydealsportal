@@ -42,3 +42,8 @@ The production repository uses GitHub Pages with `CNAME` set to `www.mydealsport
 - Confirm Search Console sitemap fetch and monitor indexing after launch.
 
 **This PR is not a production deployment.** Static public listing pages would be indexable; the existing dynamic deal/business templates remain noindex,follow.
+
+## One-time GitHub-to-Google setup (requires owner review)
+
+Review `seo/setup-github-identity.sh` before running it in Cloud Shell. It creates a Google Workload Identity pool/provider restricted to `curiositydrop/mydealsportal` on `refs/heads/main`, creates `seo-listings-reader`, grants `roles/datastore.viewer` (read-only project-wide Firestore visibility), and allows GitHub's matching identity to impersonate it. This is **a real IAM configuration change**, so run it only with owner approval and awareness of the project-wide read visibility. It does not create a key or publish any site changes. The workflow additionally requires two GitHub repository variables, printed by the script. GitHub's scheduled workflows only execute on the default branch, so the PR must be separately reviewed and merged before any schedule can run. The preview job still never deploys.
+
