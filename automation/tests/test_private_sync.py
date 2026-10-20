@@ -31,6 +31,21 @@ class PrivateSyncTests(unittest.TestCase):
             ids, truncated = private_sync.list_sent_ids("fake", max_pages=1)
         self.assertTrue(truncated)
 
+    def test_wrong_sender_account_blocked(self):
+        with patch.object(private_sync, "request_json", return_value={"emailAddress": "other@example.com"}):
+            with self.assertRaises(RuntimeError):
+                private_sync.verify_sender_account("fake")
+
+    def test_correct_sender_account_accepted(self):
+        with patch.object(private_sync, "request_json", return_value={"emailAddress": "mbergeron79@gmail.com"}):
+            private_sync.verify_sender_account("fake")
+
+    def test_all_sent_mail_included(self):
+        with patch.object(private_sync, "request_json", return_value={"messages": []}) as request:
+            private_sync.list_sent_ids("fake")
+        self.assertIn("in%3Asent", request.call_args.args[0])
+        self.assertNotIn("MyDealsPortal", request.call_args.args[0])
+
     def test_recipient_header_parsing(self):
         with patch.object(private_sync, "request_json", return_value={
             "payload": {"headers": [{"name": "To", "value": "Shop <SHOP@example.com>, owner@example.com"}]}
