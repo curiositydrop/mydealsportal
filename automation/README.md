@@ -37,3 +37,9 @@ python automation/private_sync.py --spreadsheet-id 1uaapnRJj7ypROxGYmFn-JClNFWeU
 The script rejects output locations inside the working repository. Exports include personal contact information and must remain private. The Gmail sync now checks **all** sent messages for the intended account, rather than only messages mentioning MyDealsPortal. The code verifies the account is `mbergeron79@gmail.com` before exporting. For production-safe deduplication, also maintain explicit suppression records and business-level duplicate checks before approving outreach. Never assume a missing Gmail result means a business was never contacted.
 
 **Status:** GitHub CI validates the offline pilot. OAuth credentials and private scheduled execution have not been provisioned; no live Gmail/Sheets API sync has run.
+
+## Safety and deployment gate
+
+The lead processor rejects candidate email duplicates, CRM business-name duplicates, opt-outs, and missing public source URLs. Business-name matching is deliberately conservative: distinct businesses with identical names may be held for manual review. This is not proof of email validity or permission to send.
+
+**Do not enable scheduled sending yet.** First run and inspect tests, provision OAuth credentials in a private execution environment, verify a complete historical suppression list, add bounce/unsubscribe handling and legally required sender information, and confirm that the account owner approves the final recipient batch. The public repository must never store CRM exports, tokens, or output files.
