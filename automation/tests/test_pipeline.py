@@ -17,6 +17,19 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(ready[0]["status"], "Ready for review")
         self.assertIn("months two and three free", ready[0]["draft"])
 
+    def test_business_duplicate_with_different_email(self):
+        candidates = [{"business": "Example Shop", "email": "new@example.com", "source_url": "https://example.com/contact"}]
+        existing = [{"Business": "Example Shop", "Public email": "old@example.com"}]
+        ready, rejected = prepare(candidates, existing, [])
+        self.assertEqual(ready, [])
+        self.assertEqual(rejected[0]["reason"], "business already in CRM or candidate batch")
+
+    def test_opted_out_candidate(self):
+        candidates = [{"business": "Example Shop", "email": "new@example.com", "source_url": "https://example.com/contact", "opted_out": "yes"}]
+        ready, rejected = prepare(candidates, [], [])
+        self.assertEqual(ready, [])
+        self.assertEqual(rejected[0]["reason"], "opted out")
+
     def test_prior_sent_blocked(self):
         ready, rejected = prepare(
             [{"business": "Shop", "email": "shop@example.com", "source_url": "https://example.com"}],
