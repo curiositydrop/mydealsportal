@@ -6,7 +6,6 @@ Never prints email addresses or saves exported data to the repo.
 """
 import argparse
 import csv
-import io
 import json
 import os
 import sys
