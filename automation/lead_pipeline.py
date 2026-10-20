@@ -19,6 +19,11 @@ def read_csv(path):
 
 def prepare(candidates, existing, prior_sent):
     blocked = {normalized_email(x.get("email") or x.get("Public email")) for x in existing}
+    # Explicit suppression list: never contact an opted-out address, even if
+    # it is absent from the candidate or sent-mail exports.
+    blocked |= {normalized_email(x.get("email") or x.get("Public email")) for x in existing
+                if str(x.get("Opted out?") or x.get("opted_out") or "").strip().lower()
+                in ("yes", "true", "1")}
     blocked |= {normalized_email(x.get("email") or x.get("to")) for x in prior_sent}
     results, seen, rejected = [], set(), []
     for lead in candidates:
@@ -30,6 +35,8 @@ def prepare(candidates, existing, prior_sent):
             reason = "missing business or invalid email"
         elif not source or urlparse(source).scheme not in ("https", "http") or not urlparse(source).netloc:
             reason = "missing public contact source URL"
+        elif str(lead.get("opted_out", "")).strip().lower() in ("yes", "true", "1"):
+            reason = "opted out"
         elif email in blocked or email in seen:
             reason = "duplicate or previously contacted"
         elif str(lead.get("opted_out", "")).strip().lower() in ("yes", "true", "1"):
