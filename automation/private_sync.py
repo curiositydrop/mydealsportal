@@ -28,7 +28,7 @@ def fetch_sheet_rows(token, spreadsheet_id, sheet_name="Leads"):
         return []
     return [dict(zip(rows[0], row)) for row in rows[1:]]
 
-def list_sent_ids(token, query='in:sent "MyDealsPortal.com"', max_pages=50):
+def list_sent_ids(token, query="in:sent", max_pages=100):
     ids = []
     page_token = None
     for _ in range(max_pages):
@@ -52,6 +52,12 @@ def sent_recipients(token, ids):
                 addresses.update(address.lower() for _, address in getaddresses([header["value"]]) if address)
     return addresses
 
+def verify_sender_account(token, expected="mbergeron79@gmail.com"):
+    profile = request_json(f"{GMAIL_API}/profile", token)
+    actual = profile.get("emailAddress", "").strip().lower()
+    if actual != expected.lower():
+        raise RuntimeError("Wrong Gmail account authorized; refusing sync.")
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--spreadsheet-id", required=True)
@@ -64,6 +70,7 @@ def main():
     destination = Path(args.output_dir).resolve()
     if (Path.cwd().resolve() == destination or Path.cwd().resolve() in destination.parents):
         sys.exit("Refusing to write private data inside the working repository.")
+    verify_sender_account(gmail_token)
     destination.mkdir(parents=True, exist_ok=True, mode=0o700)
     leads = fetch_sheet_rows(sheets_token, args.spreadsheet_id)
     ids, truncated = list_sent_ids(gmail_token)
