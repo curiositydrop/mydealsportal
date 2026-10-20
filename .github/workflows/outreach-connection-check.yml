@@ -1,0 +1,35 @@
+name: MyDealsPortal Outreach - Connection Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  connection-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required Google credentials are configured
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          OUTREACH_SPREADSHEET_ID: ${{ secrets.OUTREACH_SPREADSHEET_ID }}
+        shell: bash
+        run: |
+          missing=0
+          for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REFRESH_TOKEN OUTREACH_SPREADSHEET_ID; do
+            if [ -z "${!key}" ]; then
+              echo "::warning::Missing required secret: $key"
+              missing=1
+            else
+              echo "$key is configured"
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Not connected. No Gmail or Sheets API requests were made."
+            exit 1
+          fi
+          echo "Credential presence verified only. API access has NOT been verified."
+          echo "No messages sent; no CRM rows changed."
