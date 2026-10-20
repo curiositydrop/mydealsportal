@@ -34,6 +34,6 @@ Run on a trusted private machine, with tokens loaded securely into `GOOGLE_SHEET
 python automation/private_sync.py --spreadsheet-id 1uaapnRJj7ypROxGYmFn-JClNFWeU5OsqndpBJnFt7zE --output-dir /private/mydealsportal-sync
 ```
 
-The script rejects output locations inside the working repository. Exports include personal contact information and must remain private. The Gmail search is limited to messages containing `MyDealsPortal.com`; for production-safe deduplication, expand coverage to **all relevant historic sends** and suppression records before approving outreach. Never assume a missing Gmail result means a business was never contacted.
+The script rejects output locations inside the working repository. Exports include personal contact information and must remain private. The Gmail sync now checks **all** sent messages for the intended account, rather than only messages mentioning MyDealsPortal. The code verifies the account is `mbergeron79@gmail.com` before exporting. For production-safe deduplication, also maintain explicit suppression records and business-level duplicate checks before approving outreach. Never assume a missing Gmail result means a business was never contacted.
 
 **Status:** GitHub CI validates the offline pilot. OAuth credentials and private scheduled execution have not been provisioned; no live Gmail/Sheets API sync has run.
