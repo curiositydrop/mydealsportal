@@ -17,6 +17,9 @@ def read_csv(path):
     with open(path, newline="", encoding="utf-8-sig") as handle:
         return list(csv.DictReader(handle))
 
+def normalized_business(value):
+    return re.sub(r"[^a-z0-9]+", "", (value or "").strip().lower())
+
 def prepare(candidates, existing, prior_sent):
     blocked = {normalized_email(x.get("email") or x.get("Public email")) for x in existing}
     # Explicit suppression list: never contact an opted-out address, even if
@@ -25,10 +28,13 @@ def prepare(candidates, existing, prior_sent):
                 if str(x.get("Opted out?") or x.get("opted_out") or "").strip().lower()
                 in ("yes", "true", "1")}
     blocked |= {normalized_email(x.get("email") or x.get("to")) for x in prior_sent}
-    results, seen, rejected = [], set(), []
+    # Do not re-contact a business under a different email address.
+    blocked_businesses = {normalized_business(x.get("business") or x.get("Business")) for x in existing}
+    results, seen, seen_businesses, rejected = [], set(), set(), []
     for lead in candidates:
         email = normalized_email(lead.get("email"))
         business = (lead.get("business") or "").strip()
+        business_key = normalized_business(business)
         source = (lead.get("source_url") or "").strip()
         reason = None
         if not business or not EMAIL.fullmatch(email):
@@ -37,6 +43,8 @@ def prepare(candidates, existing, prior_sent):
             reason = "missing public contact source URL"
         elif str(lead.get("opted_out", "")).strip().lower() in ("yes", "true", "1"):
             reason = "opted out"
+        elif business_key in blocked_businesses or business_key in seen_businesses:
+            reason = "business already in CRM or candidate batch"
         elif email in blocked or email in seen:
             reason = "duplicate or previously contacted"
         elif str(lead.get("opted_out", "")).strip().lower() in ("yes", "true", "1"):
@@ -45,6 +53,7 @@ def prepare(candidates, existing, prior_sent):
             rejected.append({"business": business, "email": email, "reason": reason})
             continue
         seen.add(email)
+        seen_businesses.add(business_key)
         results.append({
             **{k: (lead.get(k) or "").strip() for k in FIELDS},
             "email": email,
