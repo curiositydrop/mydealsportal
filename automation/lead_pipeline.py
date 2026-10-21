@@ -22,14 +22,12 @@ def normalized_business(value):
 
 def prepare(candidates, existing, prior_sent):
     blocked = {normalized_email(x.get("email") or x.get("Public email")) for x in existing}
-    # Explicit suppression list: never contact an opted-out address, even if
-    # it is absent from the candidate or sent-mail exports.
-    blocked |= {normalized_email(x.get("email") or x.get("Public email")) for x in existing
-                if str(x.get("Opted out?") or x.get("opted_out") or "").strip().lower()
-                in ("yes", "true", "1")}
     blocked |= {normalized_email(x.get("email") or x.get("to")) for x in prior_sent}
     # Do not re-contact a business under a different email address.
     blocked_businesses = {normalized_business(x.get("business") or x.get("Business")) for x in existing}
+    # Reject incomplete snapshots: a missing suppression or sent history is not proof of no prior contact.
+    if existing is None or prior_sent is None:
+        raise ValueError("CRM and sent-history snapshots are required")
     results, seen, seen_businesses, rejected = [], set(), set(), []
     for lead in candidates:
         email = normalized_email(lead.get("email"))
@@ -47,8 +45,6 @@ def prepare(candidates, existing, prior_sent):
             reason = "business already in CRM or candidate batch"
         elif email in blocked or email in seen:
             reason = "duplicate or previously contacted"
-        elif str(lead.get("opted_out", "")).strip().lower() in ("yes", "true", "1"):
-            reason = "opted out"
         if reason:
             rejected.append({"business": business, "email": email, "reason": reason})
             continue
