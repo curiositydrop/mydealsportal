@@ -26,5 +26,6 @@ for(const kind of ['businesses','deals']){
  }
 }
 if(listingPaths.length===0)throw Error('No listing pages');
-if(urls.length!==listingPaths.length+2)throw Error('Unexpected sitemap URL count');
+if(!urls.includes('https://www.mydealsportal.com/faq.html'))throw Error('Public FAQ missing from sitemap');
+if(urls.length!==listingPaths.length+3||new Set(urls).size!==urls.length)throw Error('Unexpected or duplicate sitemap URLs');
 console.log('RELEASE REVIEW PASSED:',listingPaths.length,'listing pages,',urls.length,'sitemap URLs, homepage and CNAME intact.');
