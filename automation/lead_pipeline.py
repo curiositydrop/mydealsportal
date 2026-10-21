@@ -21,13 +21,13 @@ def normalized_business(value):
     return re.sub(r"[^a-z0-9]+", "", (value or "").strip().lower())
 
 def prepare(candidates, existing, prior_sent):
+    # Reject incomplete snapshots: a missing suppression or sent history is not proof of no prior contact.
+    if existing is None or prior_sent is None:
+        raise ValueError("CRM and sent-history snapshots are required")
     blocked = {normalized_email(x.get("email") or x.get("Public email")) for x in existing}
     blocked |= {normalized_email(x.get("email") or x.get("to")) for x in prior_sent}
     # Do not re-contact a business under a different email address.
     blocked_businesses = {normalized_business(x.get("business") or x.get("Business")) for x in existing}
-    # Reject incomplete snapshots: a missing suppression or sent history is not proof of no prior contact.
-    if existing is None or prior_sent is None:
-        raise ValueError("CRM and sent-history snapshots are required")
     results, seen, seen_businesses, rejected = [], set(), set(), []
     for lead in candidates:
         email = normalized_email(lead.get("email"))
