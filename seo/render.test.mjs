@@ -54,3 +54,9 @@ test('date-only terms expire at end of date; free text is not guessed',()=>{
  assert.ok(pages.has('listings/deals/text-terms/index.html'));
  assert.ok(!pages.has('listings/deals/invalid-terms/index.html'));
 });
+
+
+test('sitemap includes the public FAQ landing page',()=>{
+ const pages=generatePublicPages([],[]);
+ assert.match(pages.get('sitemap.xml'), /<loc>https:\/\/www\.mydealsportal\.com\/faq\.html<\/loc>/);
+});
