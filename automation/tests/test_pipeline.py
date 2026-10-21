@@ -22,6 +22,12 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(len(rejected), 2)
         self.assertEqual(ready[0]["status"], "Ready for review")
         self.assertIn("months two and three free", ready[0]["draft"])
+        self.assertIn("while continuously subscribed", ready[0]["draft"])
+
+    def test_credential_bearing_source_url_rejected(self):
+        ready, rejected = prepare([{"business":"Example", "email":"contact@example.com", "source_url":"https://user:secret@example.com/contact"}], [], [])
+        self.assertFalse(ready)
+        self.assertEqual(rejected[0]["reason"], "missing or unsafe public contact source URL")
 
     def test_business_duplicate_with_different_email(self):
         candidates = [{"business": "Example Shop", "email": "new@example.com", "source_url": "https://example.com/contact"}]
