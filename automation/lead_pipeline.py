@@ -59,7 +59,7 @@ def prepare(candidates, existing, prior_sent):
                 f"Hi there!\n\nWant more people discovering {business} and your specials? "
                 "MyDealsPortal.com lets customers search for local deals by ZIP code, category, and keyword. "
                 "Our Founding 100 offer is $44.99/month: pay for month one, get months two and three free, "
-                "and lock in that rate for life. You can list unlimited deals for the same flat monthly price.\n\n"
+                "and keep that rate while continuously subscribed. You can list unlimited deals for the same flat monthly price.\n\n"
                 "Take a look: https://www.mydealsportal.com/\n\n"
                 "Best,\nMike\n"
             )
