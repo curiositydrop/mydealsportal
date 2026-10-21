@@ -39,7 +39,7 @@ export function generatePublicPages(businesses,deals){
     const desc=[d.title,b.name,d.city||b.city,d.description].filter(Boolean).join(' · ').slice(0,160);
     pages.set('listings/deals/'+d.id+'/index.html',page(d.title+' | MyDealsPortal',desc,url,'<h1>'+esc(d.title)+'</h1><p>From '+esc(b.name)+'</p><p>'+esc(d.description)+'</p><p><a href="/deal.html?id='+encodeURIComponent(d.id)+'">View current deal and terms</a></p>'));
   }
-  const urls=[origin+'/',origin+'/advertise.html',...Array.from(pages.keys(),p=>origin+'/'+p.replace(/index\.html$/,''))];
+  const urls=[origin+'/',origin+'/advertise.html',origin+'/faq.html',...Array.from(pages.keys(),p=>origin+'/'+p.replace(/index\.html$/,''))];
   pages.set('sitemap.xml','<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+urls.map(u=>'  <url><loc>'+esc(u)+'</loc></url>').join('\n')+'\n</urlset>\n');
   return pages;
 }
