@@ -29,3 +29,13 @@ test('wrong custom domain blocks release',async()=>{
 test('private field marker blocks release',async()=>{
  const root=await fixture();try{await fs.appendFile(path.join(root,'listings','businesses','abc','index.html'),'ownerUid');assert.notEqual(run(root).status,0);}finally{await fs.rm(root,{recursive:true,force:true});}
 });
+
+test('missing FAQ sitemap URL blocks release',async()=>{
+ const root=await fixture();
+ try {
+  const p=path.join(root,'sitemap.xml');
+  const xml=await fs.readFile(p,'utf8');
+  await fs.writeFile(p,xml.replace('<url><loc>'+origin+'/faq.html</loc></url>',''));
+  assert.notEqual(run(root).status,0);
+ } finally {await fs.rm(root,{recursive:true,force:true});}
+});
