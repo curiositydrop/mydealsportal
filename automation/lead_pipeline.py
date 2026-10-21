@@ -37,8 +37,8 @@ def prepare(candidates, existing, prior_sent):
         reason = None
         if not business or not EMAIL.fullmatch(email):
             reason = "missing business or invalid email"
-        elif not source or urlparse(source).scheme not in ("https", "http") or not urlparse(source).netloc:
-            reason = "missing public contact source URL"
+        elif not source or urlparse(source).scheme not in ("https", "http") or not urlparse(source).hostname or urlparse(source).username or urlparse(source).password:
+            reason = "missing or unsafe public contact source URL"
         elif str(lead.get("opted_out", "")).strip().lower() in ("yes", "true", "1"):
             reason = "opted out"
         elif business_key in blocked_businesses or business_key in seen_businesses:
