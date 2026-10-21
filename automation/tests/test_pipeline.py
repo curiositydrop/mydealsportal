@@ -5,6 +5,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lead_pipeline import prepare
 
 class PipelineTests(unittest.TestCase):
+    def test_missing_history_rejected(self):
+        with self.assertRaises(ValueError):
+            prepare([], None, [])
+        with self.assertRaises(ValueError):
+            prepare([], [], None)
+
     def test_dedupe_and_review(self):
         sample = [
             {"business": "Example Shop", "email": "SHOP@example.com", "source_url": "https://example.com/contact"},
